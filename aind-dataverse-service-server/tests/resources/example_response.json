@@ -1,0 +1,18 @@
+{
+   "summaryRows": [
+      {
+         "bestMatchText": "Parvalbumin-IRES-Cre",
+         "bestMatchType": "Synonym",
+         "strand": "-",
+         "featureType": "Targeted allele",
+         "chromosome": "15",
+         "detailUri": "/allele/MGI:3590684",
+         "stars": "****",
+         "name": "parvalbumin; targeted mutation 1, Silvia Arber",
+         "location": "78075314-78090600",
+         "symbol": "Pvalb<tm1(cre)Arbr>"
+      }
+   ],
+   "totalCount": 1,
+   "meta": null
+}
