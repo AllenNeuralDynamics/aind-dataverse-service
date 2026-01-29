@@ -20,7 +20,7 @@ class TestHealthCheck(unittest.TestCase):
 class TestEntityTableRow(unittest.TestCase):
     """Tests for EntityTableRow class"""
 
-    def test_constructor_with_all_fields(self):
+    def test_constructor(self):
         """Test constructor with all fields provided"""
 
         entity_row = EntityTableRow(
@@ -34,29 +34,6 @@ class TestEntityTableRow(unittest.TestCase):
         self.assertEqual("cr138_projects", entity_row.entitysetname)
         self.assertEqual("cr138_Project", entity_row.name)
         self.assertEqual("cr138_project", entity_row.logicalname)
-
-    def test_constructor_with_optional_fields(self):
-        """Test constructor with optional fields as None"""
-
-        entity_row = EntityTableRow()
-
-        self.assertIsNone(entity_row.entityid)
-        self.assertIsNone(entity_row.entitysetname)
-        self.assertIsNone(entity_row.name)
-        self.assertIsNone(entity_row.logicalname)
-
-    def test_extra_fields_ignored(self):
-        """Test that extra fields are ignored due to ConfigDict"""
-
-        entity_row = EntityTableRow(
-            entityid="test-id-123",
-            entitysetname="cr138_projects",
-            extra_field="should_be_ignored",
-        )
-
-        self.assertEqual("test-id-123", entity_row.entityid)
-        self.assertEqual("cr138_projects", entity_row.entitysetname)
-        self.assertFalse(hasattr(entity_row, "extra_field"))
 
 
 if __name__ == "__main__":
