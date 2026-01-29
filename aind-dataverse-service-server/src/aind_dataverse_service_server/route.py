@@ -57,7 +57,15 @@ async def get_access_token() -> str:
 @cache(expire=900)
 async def get_table(
     entity_set_table_name: str = Path(
-        ..., description="The entity set name of the table to fetch"
+        ...,
+        description="The entity set name of the table to fetch",
+        openapi_examples={
+            "default": {
+                "summary": "A sample entity set name ID",
+                "description": "Example entity set name",
+                "value": "cr138_projects",
+            }
+        },
     )
 ):
     """

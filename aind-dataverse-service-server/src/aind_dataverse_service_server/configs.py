@@ -21,7 +21,6 @@ class Settings(ParameterStoreAppBaseSettings):
     scope: str = Field(default="https://service.flow.microsoft.com//.default")
     host: Optional[str] = Field(default=None)
     api_version: int = Field(default=1)
-    project_table_id: str = Field("cr138_projects")
     redis_url: Optional[RedisDsn] = Field(default=None)
 
 
