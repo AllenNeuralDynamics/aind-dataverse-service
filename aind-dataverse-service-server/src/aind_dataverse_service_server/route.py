@@ -51,9 +51,10 @@ async def get_access_token() -> str:
 
 
 @router.get(
-    "/table/{entity_set_table_name}",
+    "/get_table/{entity_set_table_name}",
     response_model=List[dict],
 )
+@cache(expire=900)
 async def get_table(
     entity_set_table_name: str = Path(
         ..., description="The entity set name of the table to fetch"
@@ -85,13 +86,13 @@ async def get_table(
 
 
 @router.get(
-    "/table_data",
+    "/get_table_names",
     response_model=List[EntityTableRow],
 )
-async def get_table_data():
+async def get_table_names():
     """
-    ## Get entity table rows
-    Retrieve information about all tables in an environment.
+    ## Get entity table names
+    Retrieves  names for entity tables in an environment.
     """
     bearer_token = await get_access_token()
     configuration = (
