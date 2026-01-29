@@ -1,6 +1,6 @@
 """Models and schema definitions for backend data structures"""
 
-from typing import Any, List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -16,7 +16,8 @@ class HealthCheck(BaseModel):
 
 class EntityTableRow(BaseModel):
     """Model of Entity Table Row"""
-    model_config = ConfigDict(extra='ignore')
+
+    model_config = ConfigDict(extra="ignore")
 
     entityid: Optional[str] = Field(default=None)
     entitysetname: Optional[str] = Field(default=None)

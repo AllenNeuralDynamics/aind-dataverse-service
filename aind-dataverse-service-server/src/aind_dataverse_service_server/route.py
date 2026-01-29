@@ -2,15 +2,13 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Path, status
 from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
 from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
 from aind_dataverse_service_server.configs import settings
 import allen_powerplatform_client
-from allen_powerplatform_client.rest import ApiException
-from allen_powerplatform_client.models.get_table_request import GetTableRequest
 
 router = APIRouter()
 
@@ -56,7 +54,11 @@ async def get_access_token() -> str:
     "/table/{entity_set_table_name}",
     response_model=List[dict],
 )
-async def get_table(entity_set_table_name: str = Path(..., description="The entity set name of the table to fetch")):
+async def get_table(
+    entity_set_table_name: str = Path(
+        ..., description="The entity set name of the table to fetch"
+    )
+):
     """
     ## Table Data
     Retrieve data from the specified entity set table.
@@ -76,8 +78,11 @@ async def get_table(entity_set_table_name: str = Path(..., description="The enti
         body = allen_powerplatform_client.GetTableRequest(
             table_name=entity_set_table_name
         )
-        api_response = api_instance.get_table(api_version=api_version, body=body)
+        api_response = api_instance.get_table(
+            api_version=api_version, body=body
+        )
     return api_response
+
 
 @router.get(
     "/table_data",
@@ -102,4 +107,3 @@ async def get_table_data():
         api_version = settings.api_version
         api_response = api_instance.fetch_table_names(api_version)
     return api_response
-    

@@ -1,16 +1,10 @@
 """Tests methods in models module"""
 
-import json
-import os
 import unittest
-from pathlib import Path
-
 from aind_dataverse_service_server.models import (
     HealthCheck,
     EntityTableRow,
 )
-
-RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"
 
 
 class TestHealthCheck(unittest.TestCase):
@@ -28,14 +22,14 @@ class TestEntityTableRow(unittest.TestCase):
 
     def test_constructor_with_all_fields(self):
         """Test constructor with all fields provided"""
-        
+
         entity_row = EntityTableRow(
             entityid="test-id-123",
             entitysetname="cr138_projects",
             name="cr138_Project",
-            logicalname="cr138_project"
+            logicalname="cr138_project",
         )
-        
+
         self.assertEqual("test-id-123", entity_row.entityid)
         self.assertEqual("cr138_projects", entity_row.entitysetname)
         self.assertEqual("cr138_Project", entity_row.name)
@@ -43,9 +37,9 @@ class TestEntityTableRow(unittest.TestCase):
 
     def test_constructor_with_optional_fields(self):
         """Test constructor with optional fields as None"""
-        
+
         entity_row = EntityTableRow()
-        
+
         self.assertIsNone(entity_row.entityid)
         self.assertIsNone(entity_row.entitysetname)
         self.assertIsNone(entity_row.name)
@@ -53,13 +47,13 @@ class TestEntityTableRow(unittest.TestCase):
 
     def test_extra_fields_ignored(self):
         """Test that extra fields are ignored due to ConfigDict"""
-        
+
         entity_row = EntityTableRow(
             entityid="test-id-123",
             entitysetname="cr138_projects",
-            extra_field="should_be_ignored"
+            extra_field="should_be_ignored",
         )
-        
+
         self.assertEqual("test-id-123", entity_row.entityid)
         self.assertEqual("cr138_projects", entity_row.entitysetname)
         self.assertFalse(hasattr(entity_row, "extra_field"))

@@ -28,6 +28,7 @@ Service to pull data from Allen Institute's Dataverse database.
 
 """
 
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Init cache and add to lifespan of app"""
@@ -37,6 +38,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     else:
         FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
     yield
+
 
 # noinspection PyTypeChecker
 app = FastAPI(

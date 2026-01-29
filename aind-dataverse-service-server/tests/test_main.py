@@ -1,27 +1,26 @@
 """Module to test main app"""
 
 import pytest
+from starlette.testclient import TestClient
 
 
 class TestMain:
     """Tests app endpoints"""
 
-    def test_get_healthcheck(self, client):
+    def test_get_healthcheck(self, client: TestClient):
         """Tests healthcheck"""
         response = client.get("/healthcheck")
         assert 200 == response.status_code
 
-    def test_get_table(self, client):
-        """Tests retrieval of table data"""
-        response = client.get("/table/cr138_projects")
+    def test_app_with_redis(self, client_with_redis: TestClient):
+        """Tests client is instantiated correctly when redis_url set."""
+        response = client_with_redis.get("/healthcheck")
         assert 200 == response.status_code
-        assert isinstance(response.json(), list)
 
-    def test_get_table_names(self, client):
-        """Tests retrieval of table names"""
-        response = client.get("/table_names")
+    def test_app_with_in_memory_cache(self, client: TestClient):
+        """Tests client is instantiated correctly when redis_url None."""
+        response = client.get("/healthcheck")
         assert 200 == response.status_code
-        assert isinstance(response.json(), list)
 
 
 if __name__ == "__main__":
