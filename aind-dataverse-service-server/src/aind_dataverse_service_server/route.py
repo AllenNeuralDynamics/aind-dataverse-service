@@ -3,13 +3,14 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Path, status
-from aind_dataverse_service_server.models import HealthCheck, ProjectsTableRow
+from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
 from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
 from aind_dataverse_service_server.configs import settings
-import allen_dataverse_client
-from allen_dataverse_client.rest import ApiException
+import allen_powerplatform_client
+from allen_powerplatform_client.rest import ApiException
+from allen_powerplatform_client.models.get_table_request import GetTableRequest
 
 router = APIRouter()
 
@@ -52,29 +53,53 @@ async def get_access_token() -> str:
 
 
 @router.get(
-    "/project_names",
-    response_model=List[ProjectsTableRow],
+    "/table/{entity_set_table_name}",
+    response_model=List[dict],
 )
-async def get_project_names():
+async def get_table(entity_set_table_name: str = Path(..., description="The entity set name of the table to fetch")):
     """
-    ## Project Names
-    Retrieve project names.
+    ## Table Data
+    Retrieve data from the specified entity set table.
     """
     bearer_token = await get_access_token()
     configuration = (
-        allen_dataverse_client.Configuration()
+        allen_powerplatform_client.Configuration()
         if settings.host is None
-        else allen_dataverse_client.Configuration(
+        else allen_powerplatform_client.Configuration(
             host=settings.host,
         )
     )
     configuration.access_token = bearer_token
-    with allen_dataverse_client.ApiClient(configuration) as api_client:
-        api_instance = allen_dataverse_client.DefaultApi(api_client)
+    with allen_powerplatform_client.ApiClient(configuration) as api_client:
+        api_instance = allen_powerplatform_client.DefaultApi(api_client)
         api_version = settings.api_version
-        body = allen_dataverse_client.FetchTableByNameRequest(
-            tableName=settings.project_table_id
+        body = allen_powerplatform_client.GetTableRequest(
+            table_name=entity_set_table_name
         )
-        api_response = api_instance.fetch_table_by_name(api_version, body)
-        models = [ProjectsTableRow(**row) for row in api_response]
-    return models
+        api_response = api_instance.get_table(api_version=api_version, body=body)
+    return api_response
+
+@router.get(
+    "/table_data",
+    response_model=List[EntityTableRow],
+)
+async def get_table_data():
+    """
+    ## Get entity table rows
+    Retrieve information about all tables in an environment.
+    """
+    bearer_token = await get_access_token()
+    configuration = (
+        allen_powerplatform_client.Configuration()
+        if settings.host is None
+        else allen_powerplatform_client.Configuration(
+            host=settings.host,
+        )
+    )
+    configuration.access_token = bearer_token
+    with allen_powerplatform_client.ApiClient(configuration) as api_client:
+        api_instance = allen_powerplatform_client.DefaultApi(api_client)
+        api_version = settings.api_version
+        api_response = api_instance.fetch_table_names(api_version)
+    return api_response
+    

@@ -1,7 +1,7 @@
 """Test routes"""
 
 import pytest
-from httpx import AsyncClient
+from unittest.mock import AsyncMock, MagicMock, patch
 from starlette.testclient import TestClient
 
 
@@ -15,25 +15,61 @@ class TestHealthcheckRoute:
         assert "OK" == response.json()["status"]
 
 
-@pytest.mark.asyncio
-class TestAlleleInfoRoute:
-    """Test responses for Allele Info."""
+class TestGetTableRoute:
+    """Test responses for getting table data."""
 
-    async def test_get_200_response(
-        self, client: TestClient, mock_async_client_get_pvalb: AsyncClient
+    @patch("aind_dataverse_service_server.route.allen_powerplatform_client.DefaultApi")
+    @patch("aind_dataverse_service_server.route.allen_powerplatform_client.ApiClient")
+    @patch("aind_dataverse_service_server.route.get_access_token")
+    def test_get_table_200_response(
+        self, mock_get_token, mock_api_client, mock_default_api, 
+        client: TestClient, mock_table_data
     ):
-        """Tests a good response"""
-        response = client.get("/allele_info/Parvalbumin-IRES-Cre")
+        """Tests a successful table data retrieval"""
+        # Mock the access token
+        mock_get_token.return_value = "mock_token"
+        
+        # Mock the API instance
+        mock_instance = MagicMock()
+        mock_instance.get_table.return_value = mock_table_data
+        mock_default_api.return_value = mock_instance
+        
+        # Mock the ApiClient context manager
+        mock_api_client.return_value.__enter__.return_value = MagicMock()
+        
+        response = client.get("/table/cr138_projects")
         assert 200 == response.status_code
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 2
 
-    async def test_get_404_response(
-        self, client: TestClient, mock_async_client_get_nothing: AsyncClient
+
+class TestGetTableNamesRoute:
+    """Test responses for getting table names."""
+
+    @patch("aind_dataverse_service_server.route.allen_powerplatform_client.DefaultApi")
+    @patch("aind_dataverse_service_server.route.allen_powerplatform_client.ApiClient")
+    @patch("aind_dataverse_service_server.route.get_access_token")
+    def test_get_table_data_200_response(
+        self, mock_get_token, mock_api_client, mock_default_api,
+        client: TestClient, mock_entity_table_rows
     ):
-        """Tests an empty response"""
-
-        response = client.get("/allele_info/NOTHING")
+        """Tests a successful table data retrieval"""
+        # Mock the access token
+        mock_get_token.return_value = "mock_token"
+        
+        # Mock the API instance
+        mock_instance = MagicMock()
+        mock_instance.fetch_table_names.return_value = mock_entity_table_rows
+        mock_default_api.return_value = mock_instance
+        
+        # Mock the ApiClient context manager
+        mock_api_client.return_value.__enter__.return_value = MagicMock()
+        
+        response = client.get("/table_data")
         assert 200 == response.status_code
-        assert [] == response.json()
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 3
+        assert response.json()[0]["entitysetname"] == "cr138_projects"
 
 
 if __name__ == "__main__":
