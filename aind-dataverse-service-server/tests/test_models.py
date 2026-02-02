@@ -1,9 +1,10 @@
 """Tests methods in models module"""
 
 import unittest
+
 from aind_dataverse_service_server.models import (
-    HealthCheck,
     EntityTableRow,
+    HealthCheck,
 )
 
 

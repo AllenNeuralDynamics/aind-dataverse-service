@@ -1,9 +1,10 @@
 """Test routes"""
 
+from unittest.mock import MagicMock, call, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, call
-from starlette.testclient import TestClient
 from azure.core.credentials import AccessToken
+from starlette.testclient import TestClient
 
 from aind_dataverse_service_server.route import get_access_token
 
@@ -49,9 +50,9 @@ class TestRoute:
     @patch("aind_dataverse_service_server.route.get_access_token")
     def test_get_table_200_response(
         self,
-        mock_get_token,
-        mock_api_client,
-        mock_default_api,
+        mock_get_token: MagicMock,
+        mock_api_client: MagicMock,
+        mock_default_api: MagicMock,
         client: TestClient,
         mock_table_data,
     ):
@@ -79,9 +80,9 @@ class TestRoute:
     @patch("aind_dataverse_service_server.route.get_access_token")
     def test_get_table_names_200_response(
         self,
-        mock_get_token,
-        mock_api_client,
-        mock_default_api,
+        mock_get_token: MagicMock,
+        mock_api_client: MagicMock,
+        mock_default_api: MagicMock,
         client: TestClient,
         mock_entity_table_rows,
     ):

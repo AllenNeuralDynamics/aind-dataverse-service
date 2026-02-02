@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any, Generator
 from unittest.mock import patch
 
-from pydantic import RedisDsn
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import RedisDsn
+
 from aind_dataverse_service_server.configs import settings
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"

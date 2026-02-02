@@ -2,13 +2,14 @@
 
 from typing import List
 
-from fastapi import APIRouter, Path, status
-from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
-from fastapi_cache.decorator import cache
+import allen_powerplatform_client
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
+from fastapi import APIRouter, Path, status
+from fastapi_cache.decorator import cache
+
 from aind_dataverse_service_server.configs import settings
-import allen_powerplatform_client
+from aind_dataverse_service_server.models import EntityTableRow, HealthCheck
 
 router = APIRouter()
 

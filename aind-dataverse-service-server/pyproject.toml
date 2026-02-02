@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aind-dataverse-service-server"
-description = "Package to serve data from Dataverse through PowerAutmoate."
+description = "Package to serve data from Dataverse through PowerAutomate."
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [

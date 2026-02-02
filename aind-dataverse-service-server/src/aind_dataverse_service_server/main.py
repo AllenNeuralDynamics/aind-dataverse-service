@@ -2,20 +2,20 @@
 
 import logging
 import os
-
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
-
-from aind_dataverse_service_server import __version__ as service_version
-from aind_dataverse_service_server.route import router
-from redis.asyncio import from_url  # noqa
+from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache import FastAPICache
+from redis.asyncio import from_url  # noqa
+
+from aind_dataverse_service_server import __version__ as service_version
 from aind_dataverse_service_server.configs import settings
+from aind_dataverse_service_server.route import router
 
 # The log level can be set by adding an environment variable before launch.
 log_level = os.getenv("LOG_LEVEL", "INFO")
