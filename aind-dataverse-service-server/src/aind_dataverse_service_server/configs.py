@@ -21,16 +21,16 @@ class Settings(ParameterStoreAppBaseSettings):
     )
     client_id: str = Field(
         title="Dataverse Client ID",
-        description="The client ID for authenticating to the Dataverse instance",
+        description="The client ID for the Dataverse instance",
     )
     client_secret: SecretStr = Field(
         title="Dataverse Client Secret",
-        description="The client secret for authenticating to the Dataverse instance",
+        description="The client secret for the Dataverse instance",
     )
     scope: str = Field(
         default="https://service.flow.microsoft.com//.default",
         title="Dataverse Scope",
-        description="The scope for authenticating to the Dataverse instance",
+        description="The scope for the Dataverse instance",
     )
     host: Optional[str] = Field(
         default=None,
