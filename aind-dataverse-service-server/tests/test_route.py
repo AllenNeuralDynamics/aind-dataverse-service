@@ -64,7 +64,7 @@ class TestRoute:
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
-        response = client.get("/get_table/cr138_projects")
+        response = client.get("/tables/cr138_projects")
         assert 200 == response.status_code
         assert isinstance(response.json(), list)
         assert len(response.json()) == 2
@@ -78,7 +78,7 @@ class TestRoute:
         "allen_powerplatform_client.ApiClient"
     )
     @patch("aind_dataverse_service_server.route.get_access_token")
-    def test_get_table_names_200_response(
+    def test_get_table_info_200_response(
         self,
         mock_get_token: MagicMock,
         mock_api_client: MagicMock,
@@ -94,7 +94,7 @@ class TestRoute:
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
-        response = client.get("/get_table_names")
+        response = client.get("/tables")
         assert 200 == response.status_code
         assert isinstance(response.json(), list)
         assert len(response.json()) == 3

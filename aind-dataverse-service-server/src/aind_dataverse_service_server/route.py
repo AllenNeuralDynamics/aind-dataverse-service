@@ -2,14 +2,13 @@
 
 from typing import List
 
-import allen_powerplatform_client
+from fastapi import APIRouter, Path, status
+from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
+from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
-from fastapi import APIRouter, Path, status
-from fastapi_cache.decorator import cache
-
 from aind_dataverse_service_server.configs import settings
-from aind_dataverse_service_server.models import EntityTableRow, HealthCheck
+import allen_powerplatform_client
 
 router = APIRouter()
 
@@ -52,7 +51,7 @@ async def get_access_token() -> str:
 
 
 @router.get(
-    "/get_table/{entity_set_table_name}",
+    "/tables/{entity_set_table_name}",
     response_model=List[dict],
 )
 @cache(expire=900)
@@ -95,13 +94,13 @@ async def get_table(
 
 
 @router.get(
-    "/get_table_names",
+    "/tables",
     response_model=List[EntityTableRow],
 )
-async def get_table_names():
+async def get_table_info():
     """
-    ## Get entity table names
-    Retrieves  names for entity tables in an environment.
+    ## Get entity table identifying information
+    Retrieves identifying information for tables in an environment.
     """
     bearer_token = await get_access_token()
     configuration = (
