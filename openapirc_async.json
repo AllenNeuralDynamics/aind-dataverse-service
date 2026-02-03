@@ -2,6 +2,6 @@
    "packageName": "aind_dataverse_service_async_client",
    "projectName": "aind-dataverse-service-async-client",
    "library": "asyncio",
-   "packageVersion": "0.0.1"
+   "packageVersion": "0.0.2"
 }
 
