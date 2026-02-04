@@ -94,7 +94,7 @@ async def get_table(
         except allen_powerplatform_client.exceptions.ApiException as e:
             raise HTTPException(
                 status_code=e.status,
-                detail=f"Error fetching table {entity_set_table_name}: {e.reason}",
+                detail=f"Error fetching {entity_set_table_name}: {e.reason}",
             )
     return api_response
 

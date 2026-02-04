@@ -109,7 +109,10 @@ class TestRoute:
 
         response = client.get("/tables/non_existent_table")
         assert 404 == response.status_code
-        assert "Error fetching table non_existent_table" in response.json()["detail"]
+        assert (
+            "Error fetching non_existent_table"
+            in response.json()[0]["detail"]
+        )
 
     @patch(
         "aind_dataverse_service_server.route."
