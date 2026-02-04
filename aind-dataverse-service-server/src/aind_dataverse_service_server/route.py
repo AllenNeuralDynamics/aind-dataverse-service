@@ -2,7 +2,7 @@
 
 from typing import List
 
-from fastapi import APIRouter, Path, status
+from fastapi import APIRouter, HTTPException, Path, status
 from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
 from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
@@ -87,9 +87,15 @@ async def get_table(
         body = allen_powerplatform_client.GetTableRequest(
             table_name=entity_set_table_name
         )
-        api_response = api_instance.get_table(
-            api_version=api_version, body=body
-        )
+        try:
+            api_response = api_instance.get_table(
+                api_version=api_version, body=body, _request_timeout=10
+            )
+        except allen_powerplatform_client.exceptions.ApiException as e:
+            raise HTTPException(
+                status_code=e.status,
+                detail=f"Error fetching {entity_set_table_name}: {e.reason}",
+            )
     return api_response
 
 
