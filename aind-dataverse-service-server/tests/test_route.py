@@ -111,7 +111,7 @@ class TestRoute:
         assert 404 == response.status_code
         assert (
             "Error fetching non_existent_table"
-            in response.json()[0]["detail"]
+            in response.json()["detail"]
         )
 
     @patch(
