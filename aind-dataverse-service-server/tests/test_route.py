@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from azure.core.credentials import AccessToken
 from starlette.testclient import TestClient
-
+from allen_powerplatform_client.exceptions import NotFoundException
 from aind_dataverse_service_server.route import get_access_token
 
 
@@ -68,6 +68,36 @@ class TestRoute:
         assert 200 == response.status_code
         assert isinstance(response.json(), list)
         assert len(response.json()) == 2
+
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.DefaultApi"
+    )
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.ApiClient"
+    )
+    @patch("aind_dataverse_service_server.route.get_access_token")
+    def test_get_table_no_response(
+        self,
+        mock_get_token: MagicMock,
+        mock_api_client: MagicMock,
+        mock_default_api: MagicMock,
+        client: TestClient,
+        mock_table_data,
+    ):
+        """Tests a successful table data retrieval"""
+
+        mock_get_token.return_value = "mock_token"
+        mock_instance = MagicMock()
+        mock_instance.get_table.side_effect = NotFoundException
+        mock_default_api.return_value = mock_instance
+        mock_api_client.return_value.__enter__.return_value = MagicMock()
+
+        response = client.get("/tables/non_existent_table")
+        assert 200 == response.status_code
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 0
 
     @patch(
         "aind_dataverse_service_server.route."

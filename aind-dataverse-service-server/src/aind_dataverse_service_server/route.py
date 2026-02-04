@@ -87,9 +87,12 @@ async def get_table(
         body = allen_powerplatform_client.GetTableRequest(
             table_name=entity_set_table_name
         )
-        api_response = api_instance.get_table(
-            api_version=api_version, body=body
-        )
+        try:
+            api_response = api_instance.get_table(
+                api_version=api_version, body=body, _request_timeout=10
+            )
+        except allen_powerplatform_client.exceptions.NotFoundException:
+            api_response = []
     return api_response
 
 
