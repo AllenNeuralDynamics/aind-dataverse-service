@@ -3,13 +3,13 @@
 from typing import Optional
 
 from aind_settings_utils.aws import (
-    ParameterStoreAppBaseSettings,
+    SecretsManagerBaseSettings,
 )
 from pydantic import Field, RedisDsn, SecretStr
 from pydantic_settings import SettingsConfigDict
 
 
-class Settings(ParameterStoreAppBaseSettings):
+class Settings(SecretsManagerBaseSettings):
     """Settings needed to connect to Dataverse"""
 
     model_config = SettingsConfigDict(
