@@ -50,6 +50,7 @@ async def get_access_token() -> str:
     return credentials.token
 
 
+
 @router.get(
     "/tables/{entity_set_table_name}",
     response_model=List[dict],
@@ -75,7 +76,7 @@ async def get_table(
     filter: str = Query(
         default=None,
         description="OData-style filter expression",
-        example="cr138_projectname eq 'Barseq_GeneticTools",
+        example="cr138_projectname eq 'Barseq_GeneticTools'",
     ),
 ):
     """
@@ -93,13 +94,13 @@ async def get_table(
     configuration.access_token = bearer_token
     with allen_powerplatform_client.ApiClient(configuration) as api_client:
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
-        api_version = settings.api_version
-        body = allen_powerplatform_client.GetTableRequest(
-            table_name=entity_set_table_name,
-            columns=columns,
-            filter=filter,
-        )
         try:
+            api_version = settings.api_version
+            body = allen_powerplatform_client.GetTableRequest(
+                table_name=entity_set_table_name,
+                columns=columns,
+                filter=filter,
+            )
             api_response = api_instance.get_table(
                 api_version=api_version, body=body, _request_timeout=10
             )
