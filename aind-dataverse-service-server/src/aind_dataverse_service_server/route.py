@@ -81,7 +81,6 @@ async def get_table(
     """
     ## Table Data
     Retrieve data from the specified entity set table.
-    All GetTableRequest arguments are exposed as query parameters.
     """
     bearer_token = await get_access_token()
     configuration = (
