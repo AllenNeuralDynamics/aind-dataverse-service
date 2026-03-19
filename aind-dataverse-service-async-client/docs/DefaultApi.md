@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **get_table**
-> List[Dict[str, object]] get_table(entity_set_table_name)
+> List[Dict[str, object]] get_table(entity_set_table_name, columns=columns, filter=filter)
 
 Get Table
 
@@ -36,10 +36,12 @@ async with aind_dataverse_service_async_client.ApiClient(configuration) as api_c
     # Create an instance of the API class
     api_instance = aind_dataverse_service_async_client.DefaultApi(api_client)
     entity_set_table_name = 'cr138_projects' # str | The entity set name of the table to fetch
+    columns = 'modifiedon,statecode,cr138_projectname' # str | Comma-separated column names to select from the table (optional)
+    filter = 'cr138_projectname eq \'Barseq_GeneticTools\'' # str | OData-style filter expression (optional)
 
     try:
         # Get Table
-        api_response = await api_instance.get_table(entity_set_table_name)
+        api_response = await api_instance.get_table(entity_set_table_name, columns=columns, filter=filter)
         print("The response of DefaultApi->get_table:\n")
         pprint(api_response)
     except Exception as e:
@@ -54,6 +56,8 @@ async with aind_dataverse_service_async_client.ApiClient(configuration) as api_c
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **entity_set_table_name** | **str**| The entity set name of the table to fetch | 
+ **columns** | **str**| Comma-separated column names to select from the table | [optional] 
+ **filter** | **str**| OData-style filter expression | [optional] 
 
 ### Return type
 
