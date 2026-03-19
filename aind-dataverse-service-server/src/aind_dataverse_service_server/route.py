@@ -2,7 +2,7 @@
 
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
 from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
 from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
@@ -66,7 +66,17 @@ async def get_table(
                 "value": "cr138_projects",
             }
         },
-    )
+    ),
+    columns: str = Query(
+        default=None,
+        description="Comma-separated column names to select from the table",
+        example="modifiedon,statecode,cr138_projectname",
+    ),
+    filter: str = Query(
+        default=None,
+        description="OData-style filter expression",
+        example="cr138_projectname eq 'Barseq_GeneticTools'",
+    ),
 ):
     """
     ## Table Data
@@ -83,11 +93,13 @@ async def get_table(
     configuration.access_token = bearer_token
     with allen_powerplatform_client.ApiClient(configuration) as api_client:
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
-        api_version = settings.api_version
-        body = allen_powerplatform_client.GetTableRequest(
-            table_name=entity_set_table_name
-        )
         try:
+            api_version = settings.api_version
+            body = allen_powerplatform_client.GetTableRequest(
+                table_name=entity_set_table_name,
+                columns=columns,
+                filter=filter,
+            )
             api_response = api_instance.get_table(
                 api_version=api_version, body=body, _request_timeout=10
             )

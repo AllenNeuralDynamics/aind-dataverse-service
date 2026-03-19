@@ -109,10 +109,7 @@ class TestRoute:
 
         response = client.get("/tables/non_existent_table")
         assert 404 == response.status_code
-        assert (
-            "Error fetching non_existent_table"
-            in response.json()["detail"]
-        )
+        assert "Error fetching non_existent_table" in response.json()["detail"]
 
     @patch(
         "aind_dataverse_service_server.route."
@@ -144,6 +141,39 @@ class TestRoute:
         assert isinstance(response.json(), list)
         assert len(response.json()) == 3
         assert response.json()[0]["entitysetname"] == "cr138_projects"
+
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.DefaultApi"
+    )
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.ApiClient"
+    )
+    @patch("aind_dataverse_service_server.route.get_access_token")
+    def test_get_table_with_query_params(
+        self,
+        mock_get_token: MagicMock,
+        mock_api_client: MagicMock,
+        mock_default_api: MagicMock,
+        client: TestClient,
+        mock_table_data,
+    ):
+        """Tests table data retrieval with all optional query parameters"""
+        mock_get_token.return_value = "mock_token"
+        mock_instance = MagicMock()
+        mock_instance.get_table.return_value = mock_table_data
+        mock_default_api.return_value = mock_instance
+        mock_api_client.return_value.__enter__.return_value = MagicMock()
+
+        params = {
+            "columns": "name,createdon",
+            "filter": "status eq 'Active'",
+        }
+        response = client.get("/tables/cr138_projects", params=params)
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 2
 
 
 if __name__ == "__main__":
