@@ -50,7 +50,6 @@ async def get_access_token() -> str:
     return credentials.token
 
 
-
 @router.get(
     "/tables/{entity_set_table_name}",
     response_model=List[dict],
