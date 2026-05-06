@@ -70,12 +70,24 @@ async def get_table(
     columns: str = Query(
         default=None,
         description="Comma-separated column names to select from the table",
-        example="modifiedon,statecode,cr138_projectname",
+        openapi_examples={
+            "default": {
+                "summary": "Example columns query parameter",
+                "description": "Fetch only specific columns from the table",
+                "value": "modifiedon,statecode,cr138_projectname",
+            }
+        },
     ),
     filter: str = Query(
         default=None,
         description="OData-style filter expression",
-        example="cr138_projectname eq 'Barseq_GeneticTools'",
+        openapi_examples={
+            "default": {
+                "summary": "Example filter query parameter",
+                "description": "Filter rows based on specific conditions",
+                "value": "cr138_projectname eq 'Barseq_GeneticTools'",
+            }
+        },
     ),
 ):
     """

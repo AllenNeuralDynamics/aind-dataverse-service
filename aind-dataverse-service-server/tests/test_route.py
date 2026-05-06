@@ -48,7 +48,7 @@ class TestRoute:
         "allen_powerplatform_client.ApiClient"
     )
     @patch("aind_dataverse_service_server.route.get_access_token")
-    def test_get_table_200_response(
+    def test_get_table_data_200_response(
         self,
         mock_get_token: MagicMock,
         mock_api_client: MagicMock,
@@ -60,7 +60,7 @@ class TestRoute:
 
         mock_get_token.return_value = "mock_token"
         mock_instance = MagicMock()
-        mock_instance.get_table.return_value = mock_table_data
+        mock_instance.get_table_data.return_value = mock_table_data
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
@@ -78,7 +78,7 @@ class TestRoute:
         "allen_powerplatform_client.ApiClient"
     )
     @patch("aind_dataverse_service_server.route.get_access_token")
-    def test_get_table_exception_response(
+    def test_get_table_data_exception_response(
         self,
         mock_get_token: MagicMock,
         mock_api_client: MagicMock,
@@ -103,7 +103,7 @@ class TestRoute:
         not_found_exception.status = 404
         not_found_exception.reason = "Not Found"
 
-        mock_instance.get_table.side_effect = not_found_exception
+        mock_instance.get_table_data.side_effect = not_found_exception
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
@@ -128,11 +128,11 @@ class TestRoute:
         client: TestClient,
         mock_entity_table_rows,
     ):
-        """Tests a successful table data retrieval"""
+        """Tests a successful table info retrieval"""
 
         mock_get_token.return_value = "mock_token"
         mock_instance = MagicMock()
-        mock_instance.fetch_table_names.return_value = mock_entity_table_rows
+        mock_instance.get_table_names.return_value = mock_entity_table_rows
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
@@ -151,7 +151,37 @@ class TestRoute:
         "allen_powerplatform_client.ApiClient"
     )
     @patch("aind_dataverse_service_server.route.get_access_token")
-    def test_get_table_with_query_params(
+    def test_get_table_info_empty_response(
+        self,
+        mock_get_token: MagicMock,
+        mock_api_client: MagicMock,
+        mock_default_api: MagicMock,
+        client: TestClient,
+        mock_entity_table_rows,
+    ):
+        """Tests a successful table info retrieval with empty response"""
+
+        mock_get_token.return_value = "mock_token"
+        mock_instance = MagicMock()
+        mock_instance.get_table_names.return_value = None
+        mock_default_api.return_value = mock_instance
+        mock_api_client.return_value.__enter__.return_value = MagicMock()
+
+        response = client.get("/tables")
+        assert 200 == response.status_code
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 0
+
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.DefaultApi"
+    )
+    @patch(
+        "aind_dataverse_service_server.route."
+        "allen_powerplatform_client.ApiClient"
+    )
+    @patch("aind_dataverse_service_server.route.get_access_token")
+    def test_get_table_data_with_query_params(
         self,
         mock_get_token: MagicMock,
         mock_api_client: MagicMock,
@@ -162,7 +192,7 @@ class TestRoute:
         """Tests table data retrieval with all optional query parameters"""
         mock_get_token.return_value = "mock_token"
         mock_instance = MagicMock()
-        mock_instance.get_table.return_value = mock_table_data
+        mock_instance.get_table_data.return_value = mock_table_data
         mock_default_api.return_value = mock_instance
         mock_api_client.return_value.__enter__.return_value = MagicMock()
 
