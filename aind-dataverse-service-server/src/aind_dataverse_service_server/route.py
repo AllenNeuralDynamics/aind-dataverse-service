@@ -42,6 +42,7 @@ async def get_access_token() -> str:
     str
 
     """
+    print("Settings: ", settings)
     credentials: AccessToken = ClientSecretCredential(
         tenant_id=settings.tenant_id,
         client_id=settings.client_id,
@@ -95,12 +96,12 @@ async def get_table(
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
         try:
             api_version = settings.api_version
-            body = allen_powerplatform_client.GetTableRequest(
+            body = allen_powerplatform_client.GetTableDataRequest(
                 table_name=entity_set_table_name,
                 columns=columns,
                 filter=filter,
             )
-            api_response = api_instance.get_table(
+            api_response = api_instance.get_table_data(
                 api_version=api_version, body=body, _request_timeout=10
             )
         except allen_powerplatform_client.exceptions.ApiException as e:
@@ -132,5 +133,7 @@ async def get_table_info():
     with allen_powerplatform_client.ApiClient(configuration) as api_client:
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
         api_version = settings.api_version
-        api_response = api_instance.fetch_table_names(api_version)
+        api_response = api_instance.get_table_names(api_version)
+        if api_response is None:
+            api_response = []
     return api_response
