@@ -42,7 +42,6 @@ async def get_access_token() -> str:
     str
 
     """
-    print("Settings: ", settings)
     credentials: AccessToken = ClientSecretCredential(
         tenant_id=settings.tenant_id,
         client_id=settings.client_id,
