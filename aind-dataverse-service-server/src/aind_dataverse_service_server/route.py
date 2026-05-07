@@ -70,12 +70,24 @@ async def get_table(
     columns: str = Query(
         default=None,
         description="Comma-separated column names to select from the table",
-        example="modifiedon,statecode,cr138_projectname",
+        openapi_examples={
+            "default": {
+                "summary": "Example columns query parameter",
+                "description": "Fetch only specific columns from the table",
+                "value": "modifiedon,statecode,cr138_projectname",
+            }
+        },
     ),
     filter: str = Query(
         default=None,
         description="OData-style filter expression",
-        example="cr138_projectname eq 'Barseq_GeneticTools'",
+        openapi_examples={
+            "default": {
+                "summary": "Example filter query parameter",
+                "description": "Filter rows based on specific conditions",
+                "value": "cr138_projectname eq 'Barseq_GeneticTools'",
+            }
+        },
     ),
 ):
     """
@@ -95,12 +107,12 @@ async def get_table(
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
         try:
             api_version = settings.api_version
-            body = allen_powerplatform_client.GetTableRequest(
+            body = allen_powerplatform_client.GetTableDataRequest(
                 table_name=entity_set_table_name,
                 columns=columns,
                 filter=filter,
             )
-            api_response = api_instance.get_table(
+            api_response = api_instance.get_table_data(
                 api_version=api_version, body=body, _request_timeout=10
             )
         except allen_powerplatform_client.exceptions.ApiException as e:
@@ -132,5 +144,7 @@ async def get_table_info():
     with allen_powerplatform_client.ApiClient(configuration) as api_client:
         api_instance = allen_powerplatform_client.DefaultApi(api_client)
         api_version = settings.api_version
-        api_response = api_instance.fetch_table_names(api_version)
+        api_response = api_instance.get_table_names(api_version)
+        if api_response is None:
+            api_response = []
     return api_response
