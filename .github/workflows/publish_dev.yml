@@ -1,0 +1,36 @@
+name: Publish dev docker image
+on:
+  push:
+    branches:
+      - "dev"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./aind-dataverse-service-server
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute new docker image tag
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "branch=$(echo ${GITHUB_REF_NAME})" >> "$GITHUB_ENV"
+          echo "docker_tag=$(echo dev)-$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Github Packages
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build dev image and push to GitHub Container Registry
+        uses: docker/build-push-action@v3
+        with:
+          context: ./aind-dataverse-service-server
+          file: ./aind-dataverse-service-server/Dockerfile-Dev
+          push: true
+          tags: |
+            ghcr.io/allenneuraldynamics/aind-dataverse-service-server:${{ env.docker_tag }}
