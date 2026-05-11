@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./aind-dataverse-service-server
-          file: ./aind-dataverse-service-server/Dockerfile.dev
+          file: ./aind-dataverse-service-server/Dockerfile-Dev
           push: true
           tags: |
             ghcr.io/allenneuraldynamics/aind-dataverse-service-server:${{ env.docker_tag }}
