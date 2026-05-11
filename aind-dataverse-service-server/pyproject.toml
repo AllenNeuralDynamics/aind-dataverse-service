@@ -17,7 +17,7 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    'allen-powerplatform-client @ git+https://github.com/AllenNeuralDynamics/allen-powerplatform-client@main#subdirectory=clients/python-client-dev',
+    'allen-powerplatform-client>=0.1.8',
     'aind-settings-utils>=0.0.3',
     'httpx',
     'pydantic>=2.0',
