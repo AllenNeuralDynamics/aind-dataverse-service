@@ -1,13 +1,19 @@
 """Module to handle endpoint responses"""
 
+
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
-from aind_dataverse_service_server.models import HealthCheck, EntityTableRow
+from aind_dataverse_service_server.models import (
+    HealthCheck,
+    EntityTableRow,
+    FundingModel
+)
 from fastapi_cache.decorator import cache
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
 from aind_dataverse_service_server.configs import settings
+from PowerPlatform.Dataverse.client import DataverseClient
 import allen_powerplatform_client
 
 router = APIRouter()
@@ -42,11 +48,12 @@ async def get_access_token() -> str:
     str
 
     """
+    print(settings.tenant_id)
     credentials: AccessToken = ClientSecretCredential(
         tenant_id=settings.tenant_id,
         client_id=settings.client_id,
         client_secret=settings.client_secret.get_secret_value(),
-    ).get_token(settings.scope)
+    ).get_token(settings.flow_scope)
     return credentials.token
 
 
@@ -148,3 +155,54 @@ async def get_table_info():
         if api_response is None:
             api_response = []
     return api_response
+
+
+@router.get(
+    "/funding",
+    response_model=List[FundingModel],
+    operation_id="get_funding"
+)
+async def get_funding():
+    """
+    ## Funding
+    Retrieves funding and project information.
+    """
+
+    credential = ClientSecretCredential(
+            tenant_id=settings.tenant_id,
+            client_id=settings.client_id,
+            client_secret=settings.client_secret.get_secret_value()
+        )
+    dataverse_client = DataverseClient(f"{settings.environment_url}", credential)
+
+    rows = dataverse_client.query.sql(
+        "SELECT p.cr138_project as project_name, fc.cr138_grant as grant_number, fc.cr138_funding_code as project_code, fi.aibs_institutionname as funding_institution, su.fullname as fundee "
+        "FROM cr138_funding_codes fc "
+        "LEFT JOIN cr138_projects_cr138_funding_codes pfc ON fc.cr138_funding_codesid = pfc.cr138_funding_codesid "
+        "LEFT JOIN cr138_projects p ON pfc.cr138_projectsid = p.cr138_projectsid "
+        "LEFT JOIN aibs_funding_institution fi ON fc.cr138_funding_institution = fi.aibs_funding_institutionid "
+        "LEFT JOIN cr138_funding_codes_systemuser u ON fc.cr138_funding_codesid = u.cr138_funding_codesid "
+        "LEFT JOIN systemuser su ON u.systemuserid = su.systemuserid"
+    )
+
+    # Group rows by (project_name, funding_code) so all fundees for that
+    # combination are collapsed into a single record with a "fundees" list.
+    grouped = {}
+    for r in rows:
+        project_name = r.get('project_name')
+        project_code = r.get('project_code')
+        fundee = r.get('fundee')
+    
+        key = (project_name, project_code)
+    
+        if key not in grouped:
+            project_dict = r.to_dict()
+            grouped[key] = FundingModel.model_validate(project_dict)
+        if fundee:
+            fundee_list = grouped[key].fundees
+            grouped[key].fundees = fundee_list + ", " + fundee if fundee_list else fundee
+
+    funding = grouped.values()
+    return list(funding)
+
+

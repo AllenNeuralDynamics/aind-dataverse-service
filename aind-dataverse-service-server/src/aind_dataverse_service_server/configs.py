@@ -27,15 +27,19 @@ class Settings(SecretsManagerBaseSettings):
         title="Dataverse Client Secret",
         description="The client secret for the Dataverse instance",
     )
-    scope: str = Field(
+    flow_scope: str = Field(
         default="https://service.flow.microsoft.com//.default",
-        title="Dataverse Scope",
+        title="Power Platform/Flow Scope",
         description="The scope for the Dataverse instance",
     )
     host: Optional[str] = Field(
         default=None,
         title="Dataverse Host URL",
         description="The host URL for the Dataverse instance",
+    )
+    environment_url: str = Field(
+        title="Dataverse Environment URL",
+        description="The environment URL for the Dataverse instance",
     )
     api_version: int = Field(
         default=1,

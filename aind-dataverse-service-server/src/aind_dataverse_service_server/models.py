@@ -23,3 +23,15 @@ class EntityTableRow(BaseModel):
     entitysetname: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)
     logicalname: Optional[str] = Field(default=None)
+
+class FundingModel(BaseModel):
+    """Response model for the Funding API"""
+
+    project_name: str | None = Field(default=None, title="Project Name")
+    subproject: str | None = Field(default=None, title="Subproject")
+    project_code: str | None = Field(default=None, title="Project Code")
+    funding_institution: str | None = Field(default=None, title="Funding Institution")
+    grant_number: str | None = Field(default=None, title="Grant Number")
+    fundees: str | None = Field(default=None, title="Fundees (PI)")
+    investigators: str | None = Field(default=None, title="Investigators")
+    model_config = ConfigDict(populate_by_name=True)
