@@ -225,12 +225,12 @@ class TestRoute:
         expected_response = [
             {
                 "project_name": "Magnetogenetic control of AD cell types",
-                "subproject": None,
+                "subproject": "Subproject 1",
                 "project_code": "127-01-006-20",
                 "funding_institution": "National Institutes of Health",
                 "grant_number": "R61AG094651",
-                "fundees": "Jonathan Ting",
-                "investigators": None
+                "fundees": "Person One",
+                "investigators": "Person Two"
             },
             {
                 "project_name": "BHA Precision Medicine Program",
