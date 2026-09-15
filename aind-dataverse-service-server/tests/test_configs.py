@@ -17,6 +17,7 @@ class TestSettings(unittest.TestCase):
             "DATAVERSE_TENANT_ID": "example_tenant_id",
             "DATAVERSE_CLIENT_ID": "example_client_id",
             "DATAVERSE_CLIENT_SECRET": "example_client_secret",
+            "DATAVERSE_ENVIRONMENT_URL": "http://example.com",
         },
         clear=True,
     )
@@ -28,6 +29,7 @@ class TestSettings(unittest.TestCase):
             tenant_id="example_tenant_id",
             client_id="example_client_id",
             client_secret="example_client_secret",
+            environment_url="http://example.com",
         )
         self.assertEqual(expected_settings, settings)
 

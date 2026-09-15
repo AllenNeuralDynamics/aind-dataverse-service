@@ -24,6 +24,7 @@ class EntityTableRow(BaseModel):
     name: Optional[str] = Field(default=None)
     logicalname: Optional[str] = Field(default=None)
 
+
 class FundingModel(BaseModel):
     """Response model for the Funding API"""
 
