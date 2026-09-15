@@ -1,6 +1,6 @@
 """Test routes"""
 
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from allen_powerplatform_client.exceptions import NotFoundException
@@ -20,7 +20,6 @@ class TestRoute:
         assert "OK" == response.json()["status"]
 
     @patch("aind_dataverse_service_server.route.ClientSecretCredential")
-    @pytest.mark.asyncio
     async def test_get_access_token(self, mock_azure_credentials: MagicMock):
         """Tests get_access_token method"""
         mock_azure_credentials.return_value.get_token.return_value = (
@@ -209,7 +208,6 @@ class TestRoute:
 
     @patch("aind_dataverse_service_server.route.ClientSecretCredential")
     @patch("aind_dataverse_service_server.route.DataverseClient")
-    @pytest.mark.asyncio
     async def test_get_funding_200(
         self,
         mock_dataverse_client: MagicMock,
