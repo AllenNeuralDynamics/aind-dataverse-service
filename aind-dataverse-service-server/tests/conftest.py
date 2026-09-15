@@ -86,7 +86,7 @@ def mock_dataverse_records() -> List[Record]:
                 'project_code': '127-01-006-20',
                 'project_name': 'Magnetogenetic control of AD cell types',
                 'funding_institution': 'National Institutes of Health',
-                'fundee': 'Jonathan Ting'
+                'fundees': 'Jonathan Ting'
             }
         ),
         Record(

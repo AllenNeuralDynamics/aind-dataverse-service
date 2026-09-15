@@ -26,6 +26,7 @@ router = APIRouter()
     response_description="Return HTTP Status Code 200 (OK)",
     status_code=status.HTTP_200_OK,
     response_model=HealthCheck,
+    operation_id="get_health",
 )
 def get_health() -> HealthCheck:
     """
@@ -59,6 +60,7 @@ async def get_access_token() -> str:
 @router.get(
     "/tables/{entity_set_table_name}",
     response_model=List[dict],
+    operation_id="get_table"
 )
 @cache(expire=900)
 async def get_table(
@@ -132,6 +134,7 @@ async def get_table(
 @router.get(
     "/tables",
     response_model=List[EntityTableRow],
+    operation_id="get_table_info"
 )
 async def get_table_info():
     """
@@ -179,7 +182,7 @@ async def get_funding():
 
     rows = dataverse_client.query.sql(
         "SELECT p.cr138_project as project_name, "
-        "fc.cr138_grant as grant_number, su.fullname as fundee, "
+        "fc.cr138_grant as grant_number, su.fullname as fundees, "
         "fc.cr138_funding_code as project_code, "
         "fi.aibs_institutionname as funding_institution "
         "FROM cr138_funding_codes fc "
@@ -194,24 +197,9 @@ async def get_funding():
         "LEFT JOIN systemuser su ON u.systemuserid = su.systemuserid"
     )
 
-    # Group rows by (project_name, funding_code) so all fundees for that
-    # combination are collapsed into a single record with a "fundees" list.
-    grouped = {}
+    funding = []
     for r in rows:
-        project_name = r.get("project_name")
-        project_code = r.get("project_code")
-        fundee = r.get("fundee")
+        r_dict = r.to_dict()
+        funding.append(FundingModel.model_validate(r_dict))
 
-        key = (project_name, project_code)
-
-        if key not in grouped:
-            project_dict = r.to_dict()
-            grouped[key] = FundingModel.model_validate(project_dict)
-
-        if fundee and grouped[key].fundees:
-            grouped[key].fundees += ", " + fundee
-        else:
-            grouped[key].fundees = grouped[key].fundees or fundee
-
-    funding = grouped.values()
-    return list(funding)
+    return funding

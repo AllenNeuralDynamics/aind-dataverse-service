@@ -59,6 +59,6 @@ app.add_middleware(
 app.include_router(router)
 
 # Clean up the methods names that is generated in the client code
-for route in app.routes:
+for route in router.routes:
     if isinstance(route, APIRoute):
         route.operation_id = route.name
