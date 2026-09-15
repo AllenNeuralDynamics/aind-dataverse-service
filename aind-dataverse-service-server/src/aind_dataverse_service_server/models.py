@@ -31,7 +31,10 @@ class FundingModel(BaseModel):
     project_name: str | None = Field(default=None, title="Project Name")
     subproject: str | None = Field(default=None, title="Subproject")
     project_code: str | None = Field(default=None, title="Project Code")
-    funding_institution: str | None = Field(default=None, title="Funding Institution")
+    funding_institution: str | None = Field(
+        default=None,
+        title="Funding Institution"
+    )
     grant_number: str | None = Field(default=None, title="Grant Number")
     fundees: str | None = Field(default=None, title="Fundees (PI)")
     investigators: str | None = Field(default=None, title="Investigators")

@@ -79,22 +79,22 @@ def mock_dataverse_records() -> List[Record]:
     """Mock a list of Dataverse records."""
     return [
         Record(
-            id='', 
-            table='', 
+            id='',
+            table='',
             data={
-                'grant_number': 'R61AG094651', 
-                'project_code': '127-01-006-20', 
-                'project_name': 'Magnetogenetic control of AD cell types', 
-                'funding_institution': 'National Institutes of Health', 
+                'grant_number': 'R61AG094651',
+                'project_code': '127-01-006-20',
+                'project_name': 'Magnetogenetic control of AD cell types',
+                'funding_institution': 'National Institutes of Health',
                 'fundee': 'Jonathan Ting'
             }
         ),
         Record(
-            id='', 
-            table='', 
+            id='',
+            table='',
             data={
-                'project_code': '127-01-004-10', 
-                'project_name': 'BHA Precision Medicine Program', 
+                'project_code': '127-01-004-10',
+                'project_name': 'BHA Precision Medicine Program',
                 'funding_institution': 'Allen Institute'
             }
         )
