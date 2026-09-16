@@ -3,9 +3,10 @@
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from allen_powerplatform_client.exceptions import NotFoundException
 from azure.core.credentials import AccessToken
 from starlette.testclient import TestClient
-from allen_powerplatform_client.exceptions import NotFoundException
+
 from aind_dataverse_service_server.route import get_access_token
 
 
@@ -204,6 +205,45 @@ class TestRoute:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
         assert len(response.json()) == 2
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    @patch("aind_dataverse_service_server.route.DataverseClient")
+    async def test_get_funding_200(
+        self,
+        mock_dataverse_client: MagicMock,
+        mock_azure_credentials: MagicMock,
+        client: TestClient,
+        mock_dataverse_records: str,
+    ):
+        """Tests a good response when fetching funding info"""
+        mock_azure_credentials.return_value = MagicMock()
+
+        mock_client = mock_dataverse_client.return_value
+        mock_client.query.sql.return_value = mock_dataverse_records
+
+        response = client.get("/funding")
+        expected_response = [
+            {
+                "project_name": "Magnetogenetic control of AD cell types",
+                "subproject": "Subproject 1",
+                "project_code": "127-01-006-20",
+                "funding_institution": "National Institutes of Health",
+                "grant_number": "R61AG094651",
+                "fundees": "Person One",
+                "investigators": "Person Two"
+            },
+            {
+                "project_name": "BHA Precision Medicine Program",
+                "subproject": None,
+                "project_code": "127-01-004-10",
+                "funding_institution": "Allen Institute",
+                "grant_number": None,
+                "fundees": None,
+                "investigators": None
+            }
+        ]
+        assert 200 == response.status_code
+        assert expected_response == response.json()
 
 
 if __name__ == "__main__":

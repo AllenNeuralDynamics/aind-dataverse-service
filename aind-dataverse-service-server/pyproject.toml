@@ -26,7 +26,8 @@ dependencies = [
     'azure-identity>=1.15.0',
     'fastapi-cache2[redis]>=0.2.2',
     'python-json-logger',
-    'PyYAML'
+    'PyYAML',
+    'PowerPlatform-Dataverse-Client'
 ]
 
 [project.optional-dependencies]
@@ -100,5 +101,6 @@ env = [
     "DATAVERSE_HOST=http://example.com",
     "DATAVERSE_TENANT_ID=example_tenant_id",
     "DATAVERSE_CLIENT_ID=example_client_id", 
-    "DATAVERSE_CLIENT_SECRET=example_client_secret"
+    "DATAVERSE_CLIENT_SECRET=example_client_secret",
+    "DATAVERSE_ENVIRONMENT_URL=http://example.com"
 ]
