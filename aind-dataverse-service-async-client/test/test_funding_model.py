@@ -14,10 +14,10 @@
 
 import unittest
 
-from aind_dataverse_service_async_client.models.entity_table_row import EntityTableRow
+from aind_dataverse_service_async_client.models.funding_model import FundingModel
 
-class TestEntityTableRow(unittest.TestCase):
-    """EntityTableRow unit test stubs"""
+class TestFundingModel(unittest.TestCase):
+    """FundingModel unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,28 +25,31 @@ class TestEntityTableRow(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> EntityTableRow:
-        """Test EntityTableRow
+    def make_instance(self, include_optional) -> FundingModel:
+        """Test FundingModel
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `EntityTableRow`
+        # uncomment below to create an instance of `FundingModel`
         """
-        model = EntityTableRow()
+        model = FundingModel()
         if include_optional:
-            return EntityTableRow(
-                entityid = '',
-                entitysetname = '',
-                name = '',
-                logicalname = ''
+            return FundingModel(
+                project_name = '',
+                subproject = '',
+                project_code = '',
+                funding_institution = '',
+                grant_number = '',
+                fundees = '',
+                investigators = ''
             )
         else:
-            return EntityTableRow(
+            return FundingModel(
         )
         """
 
-    def testEntityTableRow(self):
-        """Test EntityTableRow"""
+    def testFundingModel(self):
+        """Test FundingModel"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

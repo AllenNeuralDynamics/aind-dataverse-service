@@ -14,6 +14,7 @@ aind_dataverse_service_async_client/configuration.py
 aind_dataverse_service_async_client/exceptions.py
 aind_dataverse_service_async_client/models/__init__.py
 aind_dataverse_service_async_client/models/entity_table_row.py
+aind_dataverse_service_async_client/models/funding_model.py
 aind_dataverse_service_async_client/models/health_check.py
 aind_dataverse_service_async_client/models/http_validation_error.py
 aind_dataverse_service_async_client/models/validation_error.py
@@ -22,6 +23,7 @@ aind_dataverse_service_async_client/py.typed
 aind_dataverse_service_async_client/rest.py
 docs/DefaultApi.md
 docs/EntityTableRow.md
+docs/FundingModel.md
 docs/HTTPValidationError.md
 docs/HealthCheck.md
 docs/HealthcheckApi.md
@@ -36,6 +38,7 @@ test-requirements.txt
 test/__init__.py
 test/test_default_api.py
 test/test_entity_table_row.py
+test/test_funding_model.py
 test/test_health_check.py
 test/test_healthcheck_api.py
 test/test_http_validation_error.py
