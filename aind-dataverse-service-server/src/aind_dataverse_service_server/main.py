@@ -1,7 +1,6 @@
 """Starts and runs a FastAPI Server"""
 
-import logging
-import os
+from asyncio import Semaphore
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -16,10 +15,6 @@ from aind_dataverse_service_server import __version__ as service_version
 from aind_dataverse_service_server.configs import settings
 from aind_dataverse_service_server.route import router
 
-# The log level can be set by adding an environment variable before launch.
-log_level = os.getenv("LOG_LEVEL", "INFO")
-logging.basicConfig(level=log_level)
-
 description = """
 ## aind-dataverse-service
 
@@ -31,6 +26,8 @@ Service to pull data from Allen Institute's Dataverse database.
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Init cache and add to lifespan of app"""
+    # noinspection PyUnresolvedReferences
+    app.state.semaphore = Semaphore(settings.app_concurrency_limit)
     if settings.redis_url is not None:
         redis = from_url(settings.redis_url.unicode_string())
         FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")

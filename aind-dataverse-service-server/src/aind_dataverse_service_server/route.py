@@ -1,15 +1,17 @@
 """Module to handle endpoint responses"""
 
+from asyncio import to_thread
 from typing import List
 
 import allen_powerplatform_client
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, Request, status
 from fastapi_cache.decorator import cache
 from PowerPlatform.Dataverse.client import DataverseClient
 
 from aind_dataverse_service_server.configs import settings
+from aind_dataverse_service_server.handler import funding_sql_query
 from aind_dataverse_service_server.models import (
     EntityTableRow,
     FundingModel,
@@ -28,7 +30,7 @@ router = APIRouter()
     response_model=HealthCheck,
     operation_id="get_health",
 )
-def get_health() -> HealthCheck:
+async def get_health() -> HealthCheck:
     """
     ## Endpoint to perform a healthcheck on.
 
@@ -60,7 +62,7 @@ async def get_access_token() -> str:
 @router.get(
     "/tables/{entity_set_table_name}",
     response_model=List[dict],
-    operation_id="get_table"
+    operation_id="get_table",
 )
 @cache(expire=900)
 async def get_table(
@@ -134,7 +136,7 @@ async def get_table(
 @router.get(
     "/tables",
     response_model=List[EntityTableRow],
-    operation_id="get_table_info"
+    operation_id="get_table_info",
 )
 async def get_table_info():
     """
@@ -159,48 +161,36 @@ async def get_table_info():
     return api_response
 
 
-@router.get(
-    "/funding",
-    response_model=List[FundingModel],
-    operation_id="get_funding"
-)
-async def get_funding():
-    """
-    ## Funding
-    Retrieves funding and project information.
-    """
-
+@cache(expire=600)
+async def get_funding_data():
+    """Fetch funding data from Dataverse and cache the response"""
     credential = ClientSecretCredential(
         tenant_id=settings.tenant_id,
         client_id=settings.client_id,
         client_secret=settings.client_secret.get_secret_value(),
     )
     dataverse_client = DataverseClient(
-        f"{settings.environment_url}",
-        credential
+        base_url=f"{settings.environment_url}",
+        credential=credential,
     )
 
-    rows = dataverse_client.query.sql(
-        "SELECT p.cr138_project as project_name, "
-        "p.cr138_sub_project as subproject, u1.fullname as investigators, "
-        "fc.cr138_grant as grant_number, u2.fullname as fundees, "
-        "fc.cr138_funding_code as project_code, "
-        "fi.aibs_institutionname as funding_institution "
-        "FROM cr138_funding_codes fc "
-        "LEFT JOIN cr138_projects_cr138_funding_codes pfc "
-        "ON fc.cr138_funding_codesid = pfc.cr138_funding_codesid "
-        "LEFT JOIN cr138_projects p "
-        "ON pfc.cr138_projectsid = p.cr138_projectsid "
-        "LEFT JOIN cr138_projects_systemuser pu "
-        "ON p.cr138_projectsid = pu.cr138_projectsid "
-        "LEFT JOIN systemuser u1 ON pu.systemuserid = u1.systemuserid "
-        "LEFT JOIN aibs_funding_institution fi "
-        "ON fc.cr138_funding_institution = fi.aibs_funding_institutionid "
-        "LEFT JOIN cr138_funding_codes_systemuser fcu "
-        "ON fc.cr138_funding_codesid = fcu.cr138_funding_codesid "
-        "LEFT JOIN systemuser u2 ON fcu.systemuserid = u2.systemuserid"
-    )
+    rows = await to_thread(dataverse_client.query.sql, funding_sql_query)
+    return rows
 
+
+@router.get(
+    "/funding", response_model=List[FundingModel], operation_id="get_funding"
+)
+@cache(expire=600)
+async def get_funding(request: Request):
+    """
+    ## Funding
+    Retrieves funding and project information.
+    """
+    # Limit number of requests that will be sent to Dataverse
+    semaphore = request.app.state.semaphore
+    async with semaphore:
+        rows = await get_funding_data()
     funding = []
     for r in rows:
         r_dict = r.to_dict()

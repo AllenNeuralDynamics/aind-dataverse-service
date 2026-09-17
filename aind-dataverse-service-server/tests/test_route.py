@@ -230,7 +230,7 @@ class TestRoute:
                 "funding_institution": "National Institutes of Health",
                 "grant_number": "R61AG094651",
                 "fundees": "Person One",
-                "investigators": "Person Two"
+                "investigators": "Person Two",
             },
             {
                 "project_name": "BHA Precision Medicine Program",
@@ -239,8 +239,8 @@ class TestRoute:
                 "funding_institution": "Allen Institute",
                 "grant_number": None,
                 "fundees": None,
-                "investigators": None
-            }
+                "investigators": None,
+            },
         ]
         assert 200 == response.status_code
         assert expected_response == response.json()
