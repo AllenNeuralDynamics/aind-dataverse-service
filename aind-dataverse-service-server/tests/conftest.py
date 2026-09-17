@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+from PowerPlatform.Dataverse.models import Record
 from pydantic import RedisDsn
 
 from aind_dataverse_service_server.configs import settings
-from PowerPlatform.Dataverse.models import Record
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"
 
@@ -79,27 +79,27 @@ def mock_dataverse_records() -> List[Record]:
     """Mock a list of Dataverse records."""
     return [
         Record(
-            id='',
-            table='',
+            id="",
+            table="",
             data={
-                'grant_number': 'R61AG094651',
-                'project_code': '127-01-006-20',
-                'project_name': 'Magnetogenetic control of AD cell types',
-                'subproject': 'Subproject 1',
-                'funding_institution': 'National Institutes of Health',
-                'fundees': 'Person One',
-                'investigators': 'Person Two',
-            }
+                "grant_number": "R61AG094651",
+                "project_code": "127-01-006-20",
+                "project_name": "Magnetogenetic control of AD cell types",
+                "subproject": "Subproject 1",
+                "funding_institution": "National Institutes of Health",
+                "fundees": "Person One",
+                "investigators": "Person Two",
+            },
         ),
         Record(
-            id='',
-            table='',
+            id="",
+            table="",
             data={
-                'project_code': '127-01-004-10',
-                'project_name': 'BHA Precision Medicine Program',
-                'funding_institution': 'Allen Institute'
-            }
-        )
+                "project_code": "127-01-004-10",
+                "project_name": "BHA Precision Medicine Program",
+                "funding_institution": "Allen Institute",
+            },
+        ),
     ]
 
 
@@ -124,6 +124,10 @@ def client_with_redis() -> Generator[TestClient, Any, None]:
         ),
         patch(
             "aind_dataverse_service_server.main.RedisBackend",
+            return_value=None,
+        ),
+        patch(
+            "aind_dataverse_service_server.main.Semaphore",
             return_value=None,
         ),
     ):

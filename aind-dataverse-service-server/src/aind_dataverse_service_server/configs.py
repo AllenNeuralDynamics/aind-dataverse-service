@@ -51,6 +51,13 @@ class Settings(SecretsManagerBaseSettings):
         title="Redis URL",
         description="The Redis URL for caching",
     )
+    app_concurrency_limit: int = Field(
+        default=16,
+        description=(
+            "Limit number of max API calls that can be made to Dataverse."
+            "More than this number will sit in a queue."
+        ),
+    )
 
 
 settings = Settings()
