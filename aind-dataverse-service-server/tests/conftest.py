@@ -75,8 +75,8 @@ def mock_entity_table_rows():
 
 
 @pytest.fixture
-def mock_dataverse_records() -> List[Record]:
-    """Mock a list of Dataverse records."""
+def mock_funding_records() -> List[Record]:
+    """Mock a list of Dataverse funding records."""
     return [
         Record(
             id="",
@@ -99,6 +99,53 @@ def mock_dataverse_records() -> List[Record]:
                 "project_name": "BHA Precision Medicine Program",
                 "funding_institution": "Allen Institute",
             },
+        ),
+    ]
+
+
+@pytest.fixture
+def mock_water_restriction_records() -> List[Record]:
+    """Mock a list of Dataverse water restriction records."""
+    return [
+        Record(
+            id="",
+            table="",
+            data={
+                "aibs_dim_miceid": "921c2fd6-a16a-f111-a826-0022481e1c24",
+                "active_record": True,
+                "water_restriction_status": 252080002,
+                "last_watered_datetime": "2026-08-13T23:31:52Z",
+                "new_value": "active water restriction",
+                "low_weight_threshold": 22.57,
+                "record_name": "858802_20260806T232937Z",
+                "mouse_id": "858802",
+                "change_date_time": "2026-08-12T22:08:28Z",
+                "target_weight": 26.07,
+                "targeted_weight_percentage": 0.85,
+                "baseline_weight": 30.67,
+                "old_value": "adlib: baseline weight establishment",
+            },
+            etag='W/"187243480"',
+        ),
+        Record(
+            id="",
+            table="",
+            data={
+                "aibs_dim_miceid": "921c2fd6-a16a-f111-a826-0022481e1c24",
+                "active_record": True,
+                "water_restriction_status": 252080002,
+                "last_watered_datetime": "2026-08-13T23:31:52Z",
+                "new_value": "adlib: paused water restriction",
+                "low_weight_threshold": 22.57,
+                "record_name": "858802_20260806T232937Z",
+                "mouse_id": "858802",
+                "change_date_time": "2026-08-13T23:32:30Z",
+                "target_weight": 26.07,
+                "targeted_weight_percentage": 0.85,
+                "baseline_weight": 30.67,
+                "old_value": "active water restriction",
+            },
+            etag='W/"187243480"',
         ),
     ]
 

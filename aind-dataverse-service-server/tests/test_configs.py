@@ -31,7 +31,12 @@ class TestSettings(unittest.TestCase):
             client_secret="example_client_secret",
             environment_url="http://example.com",
         )
+        computed_dataverse_scope_url = settings.dataverse_api_scope_url
+        expected_dataverse_scope_url = "http://example.com/.default"
         self.assertEqual(expected_settings, settings)
+        self.assertEqual(
+            expected_dataverse_scope_url, computed_dataverse_scope_url
+        )
 
 
 if __name__ == "__main__":

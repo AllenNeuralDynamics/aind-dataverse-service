@@ -15,7 +15,7 @@ Requires docker to build and run package locally.
 
 - Create a file called env/webapp.env with appropriate env variables.
 - Run `docker build -t aind-dataverse-service-server-local:latest .`
-- Run `docker run -p 5000:80 --env-file=env/webapp.env aind-dataverse-service-server-local:latest`
+- Run `docker run --rm -p 5000:80 --env-file=env/webapp.env aind-dataverse-service-server-local:latest`
 - Service will be available at `http://localhost:5000`
 - Check docs at `http://localhost:5000/docs`
 

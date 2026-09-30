@@ -5,7 +5,7 @@ from typing import Optional
 from aind_settings_utils.aws import (
     SecretsManagerBaseSettings,
 )
-from pydantic import Field, RedisDsn, SecretStr
+from pydantic import Field, RedisDsn, SecretStr, computed_field
 from pydantic_settings import SettingsConfigDict
 
 
@@ -30,6 +30,11 @@ class Settings(SecretsManagerBaseSettings):
     flow_scope: str = Field(
         default="https://service.flow.microsoft.com//.default",
         title="Power Platform/Flow Scope",
+        description="The scope for the Dataverse instance",
+    )
+    dataverse_api_scope: str = Field(
+        default=".default",
+        title="Dataverse API scope",
         description="The scope for the Dataverse instance",
     )
     host: Optional[str] = Field(
@@ -58,6 +63,12 @@ class Settings(SecretsManagerBaseSettings):
             "More than this number will sit in a queue."
         ),
     )
+
+    @computed_field
+    @property
+    def dataverse_api_scope_url(self) -> str:
+        """Compute the scope url from the environment url and scope string"""
+        return f"{self.environment_url}/{self.dataverse_api_scope}"
 
 
 settings = Settings()

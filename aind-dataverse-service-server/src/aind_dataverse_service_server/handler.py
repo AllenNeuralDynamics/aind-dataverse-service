@@ -1,4 +1,6 @@
-"""Module to handle query logic and responses."""
+"""Module to handle query logic and responses. Note that the Dataverse SQL API
+is read-only and has protections against injection attacks.
+"""
 
 funding_sql_query = """
 SELECT
@@ -25,3 +27,40 @@ LEFT JOIN cr138_funding_codes_systemuser fcu
 LEFT JOIN systemuser u2
     ON fcu.systemuserid = u2.systemuserid
 """
+
+
+def water_restriction_sql_query(mouse_id: str) -> str:
+    """
+    Generates query used to gather water restriction data for a mouse.
+    Parameters
+    ----------
+    mouse_id : str
+
+    Returns
+    -------
+    str
+
+    """
+    return f"""
+    SELECT
+      m.aibs_mouse_id AS mouse_id,
+      w.aibs_record_name AS record_name,
+      w.aibs_active_record AS active_record,
+      w.aibs_baseline_weight AS baseline_weight,
+      w.aibs_last_watered_datetime AS last_watered_datetime,
+      w.aibs_low_weight_threshold AS low_weight_threshold,
+      w.aibs_target_weight AS target_weight,
+      w.aibs_targeted_weight_percentage AS targeted_weight_percentage,
+      w.aibs_water_restriction_status AS water_restriction_status,
+      c.aibs_change_date_time as change_date_time,
+      c.aibs_new_value AS new_value,
+      c.aibs_old_value AS old_value
+    FROM aibs_dim_mice m
+    INNER JOIN aibs_fact_mouse_water_restriction w
+      ON w.aibs_mouse_id = m.aibs_dim_miceid
+    INNER JOIN aibs_fact_mouse_water_restriction_change_log c
+      ON c.aibs_mouse_id = m.aibs_dim_miceid
+      AND (c.aibs_new_value = 'active water restriction'
+      OR c.aibs_old_value = 'active water restriction')
+    WHERE m.aibs_mouse_id = '{mouse_id}'
+    """
