@@ -7,7 +7,12 @@ from allen_powerplatform_client.exceptions import NotFoundException
 from azure.core.credentials import AccessToken
 from starlette.testclient import TestClient
 
-from aind_dataverse_service_server.route import get_access_token
+from aind_dataverse_service_server.route import (
+    get_access_token,
+    get_dataverse_access_token,
+    get_funding_data,
+    get_water_restriction_data,
+)
 
 
 class TestRoute:
@@ -39,6 +44,27 @@ class TestRoute:
             ]
         )
         assert "abc" == token
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    async def test_get_dataverse_access_token(
+        self, mock_azure_credentials: MagicMock
+    ):
+        """Tests get_dataverse_access_token method"""
+        mock_azure_credentials.return_value.get_token.return_value = (
+            AccessToken(token="abc", expires_on=100)
+        )
+        access_token = await get_dataverse_access_token()
+        mock_azure_credentials.assert_has_calls(
+            [
+                call(
+                    tenant_id="example_tenant_id",
+                    client_id="example_client_id",
+                    client_secret="example_client_secret",
+                ),
+                call().get_token("http://example.com/.default"),
+            ]
+        )
+        assert {"token": "abc", "expires_on": 100} == access_token
 
     @patch(
         "aind_dataverse_service_server.route."
@@ -208,18 +234,49 @@ class TestRoute:
 
     @patch("aind_dataverse_service_server.route.ClientSecretCredential")
     @patch("aind_dataverse_service_server.route.DataverseClient")
-    async def test_get_funding_200(
+    async def test_get_funding_data(
         self,
         mock_dataverse_client: MagicMock,
         mock_azure_credentials: MagicMock,
         client: TestClient,
-        mock_dataverse_records: str,
+        mock_funding_records,
+    ):
+        """Tests get_funding_data method"""
+        mock_azure_credentials.return_value = MagicMock()
+        mock_instance = (
+            mock_dataverse_client.return_value.__enter__.return_value
+        )
+        mock_instance.query.sql.return_value = mock_funding_records
+        response = await get_funding_data()
+        assert mock_funding_records == response
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    @patch("aind_dataverse_service_server.route.DataverseClient")
+    async def test_get_water_restriction_data(
+        self,
+        mock_dataverse_client: MagicMock,
+        mock_azure_credentials: MagicMock,
+        client: TestClient,
+        mock_water_restriction_records,
+    ):
+        """Tests get_water_restriction_data method"""
+        mock_azure_credentials.return_value = MagicMock()
+        mock_instance = (
+            mock_dataverse_client.return_value.__enter__.return_value
+        )
+        mock_instance.query.sql.return_value = mock_water_restriction_records
+        response = await get_water_restriction_data(mouse_id="858802")
+        assert mock_water_restriction_records == response
+
+    @patch("aind_dataverse_service_server.route.get_funding_data")
+    async def test_get_funding_200(
+        self,
+        mock_get_funding_data: MagicMock,
+        client: TestClient,
+        mock_funding_records: str,
     ):
         """Tests a good response when fetching funding info"""
-        mock_azure_credentials.return_value = MagicMock()
-
-        mock_client = mock_dataverse_client.return_value
-        mock_client.query.sql.return_value = mock_dataverse_records
+        mock_get_funding_data.return_value = mock_funding_records
 
         response = client.get("/funding")
         expected_response = [
@@ -240,6 +297,53 @@ class TestRoute:
                 "grant_number": None,
                 "fundees": None,
                 "investigators": None,
+            },
+        ]
+        assert 200 == response.status_code
+        assert expected_response == response.json()
+
+    @patch("aind_dataverse_service_server.route.get_water_restriction_data")
+    async def test_get_water_restriction_200(
+        self,
+        mock_get_water_restriction_data: MagicMock,
+        client: TestClient,
+        mock_water_restriction_records: str,
+    ):
+        """Tests a good response when fetching water restriction info"""
+        mock_get_water_restriction_data.return_value = (
+            mock_water_restriction_records
+        )
+        response = client.get(
+            "/water_restriction", params={"mouse_id": "858802"}
+        )
+        expected_response = [
+            {
+                "mouse_id": "858802",
+                "record_name": "858802_20260806T232937Z",
+                "active_record": True,
+                "baseline_weight": "30.67",
+                "last_watered_datetime": "2026-08-13T23:31:52Z",
+                "low_weight_threshold": "22.57",
+                "target_weight": "26.07",
+                "targeted_weight_percentage": "0.85",
+                "water_restriction_status": "252080002",
+                "change_date_time": "2026-08-12T22:08:28Z",
+                "new_value": "active water restriction",
+                "old_value": "adlib: baseline weight establishment",
+            },
+            {
+                "mouse_id": "858802",
+                "record_name": "858802_20260806T232937Z",
+                "active_record": True,
+                "baseline_weight": "30.67",
+                "last_watered_datetime": "2026-08-13T23:31:52Z",
+                "low_weight_threshold": "22.57",
+                "target_weight": "26.07",
+                "targeted_weight_percentage": "0.85",
+                "water_restriction_status": "252080002",
+                "change_date_time": "2026-08-13T23:32:30Z",
+                "new_value": "adlib: paused water restriction",
+                "old_value": "active water restriction",
             },
         ]
         assert 200 == response.status_code

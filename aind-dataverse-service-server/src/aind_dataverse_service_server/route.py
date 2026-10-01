@@ -7,16 +7,22 @@ import allen_powerplatform_client
 from azure.core.credentials import AccessToken
 from azure.identity import ClientSecretCredential
 from fastapi import APIRouter, HTTPException, Path, Query, Request, status
+from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 from PowerPlatform.Dataverse.client import DataverseClient
 
 from aind_dataverse_service_server.configs import settings
-from aind_dataverse_service_server.handler import funding_sql_query
+from aind_dataverse_service_server.handler import (
+    funding_sql_query,
+    water_restriction_sql_query,
+)
 from aind_dataverse_service_server.models import (
     EntityTableRow,
     FundingModel,
     HealthCheck,
+    WaterRestrictionModel,
 )
+from aind_dataverse_service_server.session import StaticTokenCredential
 
 router = APIRouter()
 
@@ -40,6 +46,29 @@ async def get_health() -> HealthCheck:
     return HealthCheck()
 
 
+@cache(expire=3500)
+async def get_dataverse_access_token() -> dict:
+    """
+    Get access token from either Azure or cache. Token is valid for 60 minutes.
+    We set cache ttl to 3500 seconds.
+
+    Returns
+    -------
+    dict
+      A dictionary representation of the AccessToken
+
+    """
+    credential = ClientSecretCredential(
+        tenant_id=settings.tenant_id,
+        client_id=settings.client_id,
+        client_secret=settings.client_secret.get_secret_value(),
+    )
+    access_token = credential.get_token(settings.dataverse_api_scope_url)
+    return {"token": access_token.token, "expires_on": access_token.expires_on}
+
+
+# TODO: We should switch to using the Python Dataverse API for reading data
+#  instead of interacting with PowerAutomate flows.
 @cache(expire=3500)
 async def get_access_token() -> str:
     """
@@ -70,33 +99,33 @@ async def get_table(
         ...,
         description="The entity set name of the table to fetch",
         openapi_examples={
-            "default": {
-                "summary": "A sample entity set name ID",
-                "description": "Example entity set name",
-                "value": "cr138_projects",
-            }
+            "default": Example(
+                summary="A sample entity set name ID",
+                description="Example entity set name",
+                value="cr138_projects",
+            )
         },
     ),
     columns: str = Query(
         default=None,
         description="Comma-separated column names to select from the table",
         openapi_examples={
-            "default": {
-                "summary": "Example columns query parameter",
-                "description": "Fetch only specific columns from the table",
-                "value": "modifiedon,statecode,cr138_projectname",
-            }
+            "default": Example(
+                summary="Example columns query parameter",
+                description="Fetch only specific columns from the table",
+                value="modifiedon,statecode,cr138_projectname",
+            )
         },
     ),
     filter: str = Query(
         default=None,
         description="OData-style filter expression",
         openapi_examples={
-            "default": {
-                "summary": "Example filter query parameter",
-                "description": "Filter rows based on specific conditions",
-                "value": "cr138_projectname eq 'Barseq_GeneticTools'",
-            }
+            "default": Example(
+                summary="Example filter query parameter",
+                description="Filter rows based on specific conditions",
+                value="cr138_projectname eq 'Barseq_GeneticTools'",
+            )
         },
     ),
 ):
@@ -164,30 +193,23 @@ async def get_table_info():
 @cache(expire=600)
 async def get_funding_data():
     """Fetch funding data from Dataverse and cache the response"""
-    credential = ClientSecretCredential(
-        tenant_id=settings.tenant_id,
-        client_id=settings.client_id,
-        client_secret=settings.client_secret.get_secret_value(),
-    )
-    dataverse_client = DataverseClient(
-        base_url=f"{settings.environment_url}",
-        credential=credential,
-    )
-
-    rows = await to_thread(dataverse_client.query.sql, funding_sql_query)
+    access_token = await get_dataverse_access_token()
+    static_token = StaticTokenCredential(access_token)
+    with DataverseClient(
+        base_url=f"{settings.environment_url}", credential=static_token
+    ) as dataverse_client:
+        rows = await to_thread(dataverse_client.query.sql, funding_sql_query)
     return rows
 
 
 @router.get(
     "/funding", response_model=List[FundingModel], operation_id="get_funding"
 )
-@cache(expire=600)
 async def get_funding(request: Request):
     """
     ## Funding
     Retrieves funding and project information.
     """
-    # Limit number of requests that will be sent to Dataverse
     semaphore = request.app.state.semaphore
     async with semaphore:
         rows = await get_funding_data()
@@ -195,5 +217,50 @@ async def get_funding(request: Request):
     for r in rows:
         r_dict = r.to_dict()
         funding.append(FundingModel.model_validate(r_dict))
-
     return funding
+
+
+@cache(expire=60)
+async def get_water_restriction_data(mouse_id: str):
+    """Fetch water restriction data from Dataverse and cache the response"""
+    access_token = await get_dataverse_access_token()
+    static_token = StaticTokenCredential(access_token)
+    with DataverseClient(
+        base_url=f"{settings.environment_url}", credential=static_token
+    ) as dataverse_client:
+        sql_query = water_restriction_sql_query(mouse_id=mouse_id)
+        rows = await to_thread(dataverse_client.query.sql, sql_query)
+    return rows
+
+
+@router.get(
+    "/water_restriction",
+    response_model=List[WaterRestrictionModel],
+    operation_id="get_water_restriction",
+)
+async def get_water_restriction(
+    request: Request,
+    mouse_id: str = Query(
+        ...,
+        openapi_examples={
+            "default": Example(
+                summary="A mouse with water restriction data",
+                description="Mouse ID",
+                value="858802",
+            )
+        },
+    ),
+):
+    """
+    ## Water Restriction
+    Retrieves Water Restriction Data.
+    """
+    semaphore = request.app.state.semaphore
+    async with semaphore:
+        rows = await get_water_restriction_data(mouse_id=mouse_id)
+    water_restrictions = []
+    for r in rows:
+        r_dict = r.to_dict()
+        water_restrictions.append(WaterRestrictionModel.model_validate(r_dict))
+
+    return water_restrictions

@@ -65,6 +65,8 @@ exclude = '''
     | \.mypy_cache
     | \.tox
     | \.venv
+    | \.env
+    | env
     | _build
     | build
     | dist
@@ -91,7 +93,7 @@ line_length = 79
 profile = "black"
 
 [tool.interrogate]
-exclude = ["setup.py", "docs", "build"]
+exclude = ["setup.py", "docs", "build", "env", ".env"]
 fail-under = 100
 
 [tool.pytest.ini_options]
