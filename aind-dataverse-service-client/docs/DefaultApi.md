@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**get_funding**](DefaultApi.md#get_funding) | **GET** /funding | Get Funding
 [**get_table**](DefaultApi.md#get_table) | **GET** /tables/{entity_set_table_name} | Get Table
 [**get_table_info**](DefaultApi.md#get_table_info) | **GET** /tables | Get Table Info
+[**get_water_restriction**](DefaultApi.md#get_water_restriction) | **GET** /water_restriction | Get Water Restriction
 
 
 # **get_funding**
@@ -209,6 +210,76 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Successful Response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_water_restriction**
+> List[WaterRestrictionModel] get_water_restriction(mouse_id)
+
+Get Water Restriction
+
+## Water Restriction
+Retrieves Water Restriction Data.
+
+### Example
+
+
+```python
+import aind_dataverse_service_client
+from aind_dataverse_service_client.models.water_restriction_model import WaterRestrictionModel
+from aind_dataverse_service_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to http://localhost
+# See configuration.py for a list of all supported configuration parameters.
+configuration = aind_dataverse_service_client.Configuration(
+    host = "http://localhost"
+)
+
+
+# Enter a context with an instance of the API client
+with aind_dataverse_service_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = aind_dataverse_service_client.DefaultApi(api_client)
+    mouse_id = '858802' # str | 
+
+    try:
+        # Get Water Restriction
+        api_response = api_instance.get_water_restriction(mouse_id)
+        print("The response of DefaultApi->get_water_restriction:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling DefaultApi->get_water_restriction: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **mouse_id** | **str**|  | 
+
+### Return type
+
+[**List[WaterRestrictionModel]**](WaterRestrictionModel.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful Response |  -  |
+**422** | Validation Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

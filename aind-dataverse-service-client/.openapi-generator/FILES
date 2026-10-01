@@ -19,6 +19,7 @@ aind_dataverse_service_client/models/health_check.py
 aind_dataverse_service_client/models/http_validation_error.py
 aind_dataverse_service_client/models/validation_error.py
 aind_dataverse_service_client/models/validation_error_loc_inner.py
+aind_dataverse_service_client/models/water_restriction_model.py
 aind_dataverse_service_client/py.typed
 aind_dataverse_service_client/rest.py
 docs/DefaultApi.md
@@ -29,6 +30,7 @@ docs/HealthCheck.md
 docs/HealthcheckApi.md
 docs/ValidationError.md
 docs/ValidationErrorLocInner.md
+docs/WaterRestrictionModel.md
 git_push.sh
 pyproject.toml
 requirements.txt
@@ -44,4 +46,5 @@ test/test_healthcheck_api.py
 test/test_http_validation_error.py
 test/test_validation_error.py
 test/test_validation_error_loc_inner.py
+test/test_water_restriction_model.py
 tox.ini
