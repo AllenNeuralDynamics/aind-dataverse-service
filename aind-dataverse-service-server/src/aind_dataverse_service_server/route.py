@@ -220,7 +220,7 @@ async def get_funding(request: Request):
 
 
 @cache(expire=60)
-async def get_water_restriction_data(mouse_id: str):
+async def get_water_restriction_data(mouse_id: str) -> List[dict]:
     """Fetch water restriction data from Dataverse and cache the response"""
     access_token = await get_dataverse_access_token()
     static_token = StaticTokenCredential(access_token)
