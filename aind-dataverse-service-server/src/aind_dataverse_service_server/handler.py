@@ -44,6 +44,7 @@ def water_restriction_sql_query(mouse_id: str) -> str:
     return f"""
     SELECT
       m.aibs_mouse_id AS mouse_id,
+      p.aibs_protocol_id AS protocol_id,
       w.aibs_record_name AS record_name,
       w.aibs_active_record AS active_record,
       w.aibs_baseline_weight AS baseline_weight,
@@ -56,6 +57,8 @@ def water_restriction_sql_query(mouse_id: str) -> str:
       c.aibs_new_value AS new_value,
       c.aibs_old_value AS old_value
     FROM aibs_dim_mice m
+    LEFT JOIN aibs_dim_iacuc_protocols p
+      ON p.aibs_dim_iacuc_protocolsid = m.aibs_iacuc_protocol
     INNER JOIN aibs_fact_mouse_water_restriction w
       ON w.aibs_mouse_id = m.aibs_dim_miceid
     INNER JOIN aibs_fact_mouse_water_restriction_change_log c

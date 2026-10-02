@@ -319,6 +319,7 @@ class TestRoute:
         expected_response = [
             {
                 "mouse_id": "858802",
+                "protocol_id": None,
                 "record_name": "858802_20260806T232937Z",
                 "active_record": True,
                 "baseline_weight": "30.67",
@@ -333,6 +334,7 @@ class TestRoute:
             },
             {
                 "mouse_id": "858802",
+                "protocol_id": None,
                 "record_name": "858802_20260806T232937Z",
                 "active_record": True,
                 "baseline_weight": "30.67",
