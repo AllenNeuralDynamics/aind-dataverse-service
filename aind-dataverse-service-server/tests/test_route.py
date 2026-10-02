@@ -1,10 +1,12 @@
 """Test routes"""
 
+from typing import List
 from unittest.mock import MagicMock, call, patch
 
 import pytest
 from allen_powerplatform_client.exceptions import NotFoundException
 from azure.core.credentials import AccessToken
+from PowerPlatform.Dataverse.models import Record
 from starlette.testclient import TestClient
 
 from aind_dataverse_service_server.route import (
@@ -248,7 +250,7 @@ class TestRoute:
         )
         mock_instance.query.sql.return_value = mock_funding_records
         response = await get_funding_data()
-        assert mock_funding_records == response
+        assert [r.data for r in mock_funding_records] == response
 
     @patch("aind_dataverse_service_server.route.ClientSecretCredential")
     @patch("aind_dataverse_service_server.route.DataverseClient")
@@ -266,17 +268,19 @@ class TestRoute:
         )
         mock_instance.query.sql.return_value = mock_water_restriction_records
         response = await get_water_restriction_data(mouse_id="858802")
-        assert mock_water_restriction_records == response
+        assert [r.data for r in mock_water_restriction_records] == response
 
     @patch("aind_dataverse_service_server.route.get_funding_data")
     async def test_get_funding_200(
         self,
         mock_get_funding_data: MagicMock,
         client: TestClient,
-        mock_funding_records: str,
+        mock_funding_records: List[Record],
     ):
         """Tests a good response when fetching funding info"""
-        mock_get_funding_data.return_value = mock_funding_records
+        mock_get_funding_data.return_value = [
+            r.data for r in mock_funding_records
+        ]
 
         response = client.get("/funding")
         expected_response = [
@@ -307,12 +311,12 @@ class TestRoute:
         self,
         mock_get_water_restriction_data: MagicMock,
         client: TestClient,
-        mock_water_restriction_records: str,
+        mock_water_restriction_records: List[Record],
     ):
         """Tests a good response when fetching water restriction info"""
-        mock_get_water_restriction_data.return_value = (
-            mock_water_restriction_records
-        )
+        mock_get_water_restriction_data.return_value = [
+            r.data for r in mock_water_restriction_records
+        ]
         response = client.get(
             "/water_restriction", params={"mouse_id": "858802"}
         )

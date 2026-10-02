@@ -191,7 +191,7 @@ async def get_table_info():
 
 
 @cache(expire=600)
-async def get_funding_data():
+async def get_funding_data() -> List[dict]:
     """Fetch funding data from Dataverse and cache the response"""
     access_token = await get_dataverse_access_token()
     static_token = StaticTokenCredential(access_token)
@@ -199,7 +199,7 @@ async def get_funding_data():
         base_url=f"{settings.environment_url}", credential=static_token
     ) as dataverse_client:
         rows = await to_thread(dataverse_client.query.sql, funding_sql_query)
-    return rows
+    return [r.to_dict() for r in rows]
 
 
 @router.get(
@@ -215,8 +215,7 @@ async def get_funding(request: Request):
         rows = await get_funding_data()
     funding = []
     for r in rows:
-        r_dict = r.to_dict()
-        funding.append(FundingModel.model_validate(r_dict))
+        funding.append(FundingModel.model_validate(r))
     return funding
 
 
@@ -230,7 +229,7 @@ async def get_water_restriction_data(mouse_id: str):
     ) as dataverse_client:
         sql_query = water_restriction_sql_query(mouse_id=mouse_id)
         rows = await to_thread(dataverse_client.query.sql, sql_query)
-    return rows
+    return [r.to_dict() for r in rows]
 
 
 @router.get(
@@ -260,7 +259,6 @@ async def get_water_restriction(
         rows = await get_water_restriction_data(mouse_id=mouse_id)
     water_restrictions = []
     for r in rows:
-        r_dict = r.to_dict()
-        water_restrictions.append(WaterRestrictionModel.model_validate(r_dict))
+        water_restrictions.append(WaterRestrictionModel.model_validate(r))
 
     return water_restrictions
