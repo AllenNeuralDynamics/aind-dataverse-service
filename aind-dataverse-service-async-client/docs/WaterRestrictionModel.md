@@ -7,6 +7,7 @@ Response model for the Water Restriction API
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **mouse_id** | **str** |  | 
+**protocol_id** | **str** |  | [optional] 
 **record_name** | **str** |  | [optional] 
 **active_record** | **bool** |  | [optional] 
 **baseline_weight** | **str** |  | [optional] 
