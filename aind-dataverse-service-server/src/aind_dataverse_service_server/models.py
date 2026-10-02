@@ -47,6 +47,7 @@ class WaterRestrictionModel(BaseModel):
 
     model_config = ConfigDict(coerce_numbers_to_str=True)
     mouse_id: str | None = Field(..., title="Mouse ID")
+    protocol_id: str | None = Field(default=None, title="IACUC Protocol ID")
     record_name: str | None = Field(default=None, title="Record Name")
     active_record: bool | None = Field(default=None, title="Active Record")
     baseline_weight: Decimal | None = Field(
