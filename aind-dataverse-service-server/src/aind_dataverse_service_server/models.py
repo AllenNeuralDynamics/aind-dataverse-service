@@ -92,7 +92,6 @@ class HistologyWashModel(BaseModel):
     reagents: List[HistologyReagentModel] = Field(
         default_factory=list, title="Reagents"
     )
-    mass: int | None = Field(default=None, title="Mass")
 
 
 class HistologyModel(BaseModel):

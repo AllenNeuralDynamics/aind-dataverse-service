@@ -478,7 +478,6 @@ class TestRoute:
                         },
                         {"name": "DAPI", "source": None, "lot_number": None},
                     ],
-                    "mass": None,
                 }
             ],
         } == body[0]
