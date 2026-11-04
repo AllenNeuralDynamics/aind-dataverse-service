@@ -18,6 +18,7 @@ class TestSettings(unittest.TestCase):
             "DATAVERSE_CLIENT_ID": "example_client_id",
             "DATAVERSE_CLIENT_SECRET": "example_client_secret",
             "DATAVERSE_ENVIRONMENT_URL": "http://example.com",
+            "DATAVERSE_NEW_ENVIRONMENT_URL": "http://new.example.com",
         },
         clear=True,
     )
@@ -30,12 +31,17 @@ class TestSettings(unittest.TestCase):
             client_id="example_client_id",
             client_secret="example_client_secret",
             environment_url="http://example.com",
+            new_environment_url="http://new.example.com",
         )
         computed_dataverse_scope_url = settings.dataverse_api_scope_url
         expected_dataverse_scope_url = "http://example.com/.default"
         self.assertEqual(expected_settings, settings)
         self.assertEqual(
             expected_dataverse_scope_url, computed_dataverse_scope_url
+        )
+        self.assertEqual(
+            "http://new.example.com/.default",
+            settings.new_dataverse_api_scope_url,
         )
 
 

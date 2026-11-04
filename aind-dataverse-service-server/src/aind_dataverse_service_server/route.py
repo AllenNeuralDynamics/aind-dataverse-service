@@ -1,7 +1,8 @@
 """Module to handle endpoint responses"""
 
-from asyncio import to_thread
-from typing import List
+from asyncio import gather, to_thread
+from datetime import datetime
+from typing import List, Optional
 
 import allen_powerplatform_client
 from azure.core.credentials import AccessToken
@@ -13,13 +14,18 @@ from PowerPlatform.Dataverse.client import DataverseClient
 
 from aind_dataverse_service_server.configs import settings
 from aind_dataverse_service_server.handler import (
+    delipidation_fetchxml,
     funding_sql_query,
+    group_delipidation_rows,
+    labeling_fetchxml,
+    labeling_rows_to_histology,
     water_restriction_sql_query,
 )
 from aind_dataverse_service_server.models import (
     EntityTableRow,
     FundingModel,
     HealthCheck,
+    HistologyModel,
     WaterRestrictionModel,
 )
 from aind_dataverse_service_server.session import StaticTokenCredential
@@ -47,10 +53,18 @@ async def get_health() -> HealthCheck:
 
 
 @cache(expire=3500)
-async def get_dataverse_access_token() -> dict:
+async def get_dataverse_access_token(
+    scope_url: str = settings.dataverse_api_scope_url,
+) -> dict:
     """
     Get access token from either Azure or cache. Token is valid for 60 minutes.
     We set cache ttl to 3500 seconds.
+
+    Parameters
+    ----------
+    scope_url : str
+      The scope of the Dataverse environment the token is for. Defaults to
+      the environment that holds the funding and water restriction tables.
 
     Returns
     -------
@@ -63,7 +77,7 @@ async def get_dataverse_access_token() -> dict:
         client_id=settings.client_id,
         client_secret=settings.client_secret.get_secret_value(),
     )
-    access_token = credential.get_token(settings.dataverse_api_scope_url)
+    access_token = credential.get_token(scope_url)
     return {"token": access_token.token, "expires_on": access_token.expires_on}
 
 
@@ -262,3 +276,164 @@ async def get_water_restriction(
         water_restrictions.append(WaterRestrictionModel.model_validate(r))
 
     return water_restrictions
+
+
+class MultiPageResultError(RuntimeError):
+    """A FetchXML result needed more than one page, so joined rows would be
+    lost."""
+
+
+def _fetch_single_page(client: DataverseClient, fetchxml: str) -> List[dict]:
+    """
+    Run a FetchXML query and return its only page of rows.
+
+    The histology queries join to the many side of a relationship, so one root
+    record spans several rows. Dataverse's paging cookie resumes after the
+    last root record, so any rows of that record left on the next page are
+    silently dropped. Results that need a second page are therefore refused
+    instead of being returned incomplete.
+
+    Parameters
+    ----------
+    client : DataverseClient
+      The Dataverse client.
+    fetchxml : str
+      The FetchXML query.
+
+    Returns
+    -------
+    List[dict]
+      The result rows as dictionaries.
+
+    Raises
+    ------
+    MultiPageResultError
+      The result has more than one page.
+    """
+    pages = iter(client.query.fetchxml(fetchxml).execute_pages())
+    rows = [r.to_dict() for r in next(pages, [])]
+    if next(pages, None) is not None:
+        raise MultiPageResultError(
+            "FetchXML result spans more than one page; paging would drop "
+            "joined rows."
+        )
+    return rows
+
+
+@cache(expire=600)
+async def get_histology_data(
+    subject_id: str,
+    start_date_gte: Optional[datetime],
+    end_date_lte: Optional[datetime],
+) -> dict:
+    """
+    Fetch delipidation and labeling rows from the new Dataverse environment
+    and cache the response.
+
+    Parameters
+    ----------
+    subject_id : str
+      Only return this mouse.
+    start_date_gte : Optional[datetime]
+      Only return records created on or after this time.
+    end_date_lte : Optional[datetime]
+      Only return records created on or before this time.
+
+    Returns
+    -------
+    dict
+      The ``delipidation`` and ``labeling`` rows as dictionaries.
+    """
+    access_token = await get_dataverse_access_token(
+        scope_url=settings.new_dataverse_api_scope_url
+    )
+    static_token = StaticTokenCredential(access_token)
+    filters = {
+        "subject_id": subject_id,
+        "start_date_gte": start_date_gte,
+        "end_date_lte": end_date_lte,
+    }
+    with DataverseClient(
+        base_url=f"{settings.new_environment_url}", credential=static_token
+    ) as dataverse_client:
+        delipidation, labeling = await gather(
+            to_thread(
+                _fetch_single_page,
+                dataverse_client,
+                delipidation_fetchxml(**filters),
+            ),
+            to_thread(
+                _fetch_single_page,
+                dataverse_client,
+                labeling_fetchxml(**filters),
+            ),
+        )
+    return {"delipidation": delipidation, "labeling": labeling}
+
+
+@router.get(
+    "/histology",
+    response_model=List[HistologyModel],
+    operation_id="get_histology",
+)
+async def get_histology(
+    request: Request,
+    subject_id: str = Query(
+        ...,
+        min_length=1,
+        description="Subject ID",
+        openapi_examples={
+            "default": Example(
+                summary="A subject with histology data",
+                description="Subject ID",
+                value="782745",
+            )
+        },
+    ),
+    start_date_gte: Optional[datetime] = Query(
+        None,
+        description=(
+            "Created on or after. ISO format; times without a timezone are "
+            "UTC."
+        ),
+        openapi_examples={
+            "iso_date": Example(summary="ISO date", value="2026-09-01"),
+            "iso_datetime_z": Example(
+                summary="ISO datetime in UTC", value="2026-09-01T00:00:00Z"
+            ),
+        },
+    ),
+    end_date_lte: Optional[datetime] = Query(
+        None,
+        description=(
+            "Created on or before. ISO format; times without a timezone are "
+            "UTC."
+        ),
+        openapi_examples={
+            "iso_date": Example(summary="ISO date", value="2026-10-01"),
+            "iso_datetime_z": Example(
+                summary="ISO datetime in UTC", value="2026-10-01T00:00:00Z"
+            ),
+        },
+    ),
+):
+    """
+    ## Histology
+    Retrieves SmartSPIM labeling, delipidation and refractive index matching
+    data. Returns one record per specimen and procedure.
+    """
+    semaphore = request.app.state.semaphore
+    async with semaphore:
+        data = await get_histology_data(
+            subject_id=subject_id,
+            start_date_gte=start_date_gte,
+            end_date_lte=end_date_lte,
+        )
+    # Grouping runs in a worker thread so large results don't block the
+    # event loop.
+    return await to_thread(
+        lambda: (
+            labeling_rows_to_histology(data["labeling"])
+            + group_delipidation_rows(data["delipidation"])
+        )
+    )

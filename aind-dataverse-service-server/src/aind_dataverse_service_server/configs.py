@@ -46,6 +46,13 @@ class Settings(SecretsManagerBaseSettings):
         title="Dataverse Environment URL",
         description="The environment URL for the Dataverse instance",
     )
+    new_environment_url: str = Field(
+        title="New Dataverse Environment URL",
+        description=(
+            "The URL of the Dataverse environment that holds the histology "
+            "tables"
+        ),
+    )
     api_version: int = Field(
         default=1,
         title="Dataverse API Version",
@@ -69,6 +76,12 @@ class Settings(SecretsManagerBaseSettings):
     def dataverse_api_scope_url(self) -> str:
         """Compute the scope url from the environment url and scope string"""
         return f"{self.environment_url}/{self.dataverse_api_scope}"
+
+    @computed_field
+    @property
+    def new_dataverse_api_scope_url(self) -> str:
+        """Compute the scope url from the new environment url and scope"""
+        return f"{self.new_environment_url}/{self.dataverse_api_scope}"
 
 
 settings = Settings()

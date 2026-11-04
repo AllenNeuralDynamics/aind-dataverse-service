@@ -2,9 +2,9 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from aind_dataverse_service_server import __version__
 
@@ -71,3 +71,40 @@ class WaterRestrictionModel(BaseModel):
     )
     new_value: str | None = Field(default=None, title="New Value")
     old_value: str | None = Field(default=None, title="Old Value")
+
+
+class HistologyReagentModel(BaseModel):
+    """A reagent used in a histology wash"""
+
+    name: str | None = Field(default=None, title="Name")
+    source: str | None = Field(default=None, title="Source")
+    lot_number: str | None = Field(default=None, title="Lot Number")
+
+
+class HistologyWashModel(BaseModel):
+    """A wash step in a histology procedure"""
+
+    wash_name: str | None = Field(default=None, title="Wash Name")
+    wash_type: str | None = Field(default=None, title="Wash Type")
+    start_time: AwareDatetime | None = Field(default=None, title="Start Time")
+    end_time: AwareDatetime | None = Field(default=None, title="End Time")
+    modified_by: str | None = Field(default=None, title="Modified By")
+    reagents: List[HistologyReagentModel] = Field(
+        default_factory=list, title="Reagents"
+    )
+
+
+class HistologyModel(BaseModel):
+    """Response model for the Histology API"""
+
+    procedure_name: str | None = Field(default=None, title="Procedure Name")
+    experiment_run_created_on: AwareDatetime | None = Field(
+        default=None, title="Experiment Run Created On"
+    )
+    specimen_id: str | None = Field(default=None, title="Specimen ID")
+    subject_id: str | None = Field(default=None, title="Subject ID")
+    protocol_id: str | None = Field(default=None, title="Protocol ID")
+    protocol_name: str | None = Field(default=None, title="Protocol Name")
+    washes: List[HistologyWashModel] = Field(
+        default_factory=list, title="Washes"
+    )

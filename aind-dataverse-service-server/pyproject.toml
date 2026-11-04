@@ -27,7 +27,7 @@ dependencies = [
     'fastapi-cache2[redis]>=0.2.2',
     'python-json-logger',
     'PyYAML',
-    'PowerPlatform-Dataverse-Client'
+    'PowerPlatform-Dataverse-Client>=1.1'
 ]
 
 [project.optional-dependencies]
@@ -104,5 +104,6 @@ env = [
     "DATAVERSE_TENANT_ID=example_tenant_id",
     "DATAVERSE_CLIENT_ID=example_client_id", 
     "DATAVERSE_CLIENT_SECRET=example_client_secret",
-    "DATAVERSE_ENVIRONMENT_URL=http://example.com"
+    "DATAVERSE_ENVIRONMENT_URL=http://example.com",
+    "DATAVERSE_NEW_ENVIRONMENT_URL=http://new.example.com"
 ]

@@ -1,5 +1,6 @@
 """Test routes"""
 
+from datetime import datetime
 from typing import List
 from unittest.mock import MagicMock, call, patch
 
@@ -10,9 +11,12 @@ from PowerPlatform.Dataverse.models import Record
 from starlette.testclient import TestClient
 
 from aind_dataverse_service_server.route import (
+    MultiPageResultError,
+    _fetch_single_page,
     get_access_token,
     get_dataverse_access_token,
     get_funding_data,
+    get_histology_data,
     get_water_restriction_data,
 )
 
@@ -67,6 +71,21 @@ class TestRoute:
             ]
         )
         assert {"token": "abc", "expires_on": 100} == access_token
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    async def test_get_dataverse_access_token_with_scope(
+        self, mock_azure_credentials: MagicMock
+    ):
+        """Tests get_dataverse_access_token requests the given scope"""
+        mock_azure_credentials.return_value.get_token.return_value = (
+            AccessToken(token="abc", expires_on=100)
+        )
+        await get_dataverse_access_token(
+            scope_url="http://new.example.com/.default"
+        )
+        mock_azure_credentials.return_value.get_token.assert_called_once_with(
+            "http://new.example.com/.default"
+        )
 
     @patch(
         "aind_dataverse_service_server.route."
@@ -354,6 +373,128 @@ class TestRoute:
         ]
         assert 200 == response.status_code
         assert expected_response == response.json()
+
+    def test_fetch_single_page_rejects_multiple_pages(
+        self, mock_labeling_records: List[Record]
+    ):
+        """Tests a result that needs a second page is refused, not returned
+        incomplete."""
+        mock_client = MagicMock()
+        mock_client.query.fetchxml.return_value.execute_pages.return_value = [
+            mock_labeling_records[:1],
+            mock_labeling_records[1:],
+        ]
+        with pytest.raises(MultiPageResultError):
+            _fetch_single_page(mock_client, "<fetch />")
+
+    def test_fetch_single_page_no_pages(self):
+        """Tests a query that returns no pages gives no rows."""
+        mock_client = MagicMock()
+        mock_client.query.fetchxml.return_value.execute_pages.return_value = []
+        assert [] == _fetch_single_page(mock_client, "<fetch />")
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    @patch("aind_dataverse_service_server.route.DataverseClient")
+    async def test_get_histology_data(
+        self,
+        mock_dataverse_client: MagicMock,
+        mock_azure_credentials: MagicMock,
+        mock_delipidation_records: List[Record],
+        mock_labeling_records: List[Record],
+    ):
+        """Tests get_histology_data runs both queries against the new
+        environment"""
+        mock_azure_credentials.return_value.get_token.return_value = (
+            AccessToken(token="abc", expires_on=100)
+        )
+        mock_instance = (
+            mock_dataverse_client.return_value.__enter__.return_value
+        )
+        mock_pages = mock_instance.query.fetchxml.return_value.execute_pages
+        mock_pages.side_effect = [
+            [mock_delipidation_records],
+            [mock_labeling_records],
+        ]
+        response = await get_histology_data(
+            subject_id="782745", start_date_gte=None, end_date_lte=None
+        )
+        assert {
+            "delipidation": [r.data for r in mock_delipidation_records],
+            "labeling": [r.data for r in mock_labeling_records],
+        } == response
+        assert 2 == mock_instance.query.fetchxml.call_count
+        assert (
+            "http://new.example.com"
+            == mock_dataverse_client.call_args.kwargs["base_url"]
+        )
+        mock_azure_credentials.return_value.get_token.assert_called_once_with(
+            "http://new.example.com/.default"
+        )
+
+    @patch("aind_dataverse_service_server.route.get_histology_data")
+    async def test_get_histology_200(
+        self,
+        mock_get_histology_data: MagicMock,
+        client: TestClient,
+        mock_delipidation_records: List[Record],
+        mock_labeling_records: List[Record],
+    ):
+        """Tests a good response when fetching histology info"""
+        mock_get_histology_data.return_value = {
+            "delipidation": [r.data for r in mock_delipidation_records],
+            "labeling": [r.data for r in mock_labeling_records],
+        }
+        response = client.get(
+            "/histology",
+            params={"subject_id": "782745", "start_date_gte": "2026-09-01"},
+        )
+        assert 200 == response.status_code
+        body = response.json()
+        assert [
+            "SmartSPIM Labeling",
+            "SmartSPIM Delipidation",
+            "SmartSPIM Refractive Index Matching",
+            "SmartSPIM Delipidation",
+        ] == [r["procedure_name"] for r in body]
+        assert {
+            "procedure_name": "SmartSPIM Labeling",
+            "experiment_run_created_on": "2026-09-16T21:16:37Z",
+            "specimen_id": "782745",
+            "subject_id": "782745",
+            "protocol_id": None,
+            "protocol_name": None,
+            "washes": [
+                {
+                    "wash_name": "Labeling",
+                    "wash_type": None,
+                    "start_time": "2026-09-17T16:00:00Z",
+                    "end_time": "2026-09-18T16:00:00Z",
+                    "modified_by": "Person One",
+                    "reagents": [
+                        {
+                            "name": "anti-GFP",
+                            "source": None,
+                            "lot_number": None,
+                        },
+                        {"name": "DAPI", "source": None, "lot_number": None},
+                    ],
+                }
+            ],
+        } == body[0]
+        kwargs = mock_get_histology_data.call_args.kwargs
+        assert ("782745", datetime(2026, 9, 1), None) == (
+            kwargs["subject_id"],
+            kwargs["start_date_gte"],
+            kwargs["end_date_lte"],
+        )
+
+    @pytest.mark.parametrize("params", [{}, {"subject_id": ""}])
+    def test_get_histology_missing_subject_422(
+        self, client: TestClient, params: dict
+    ):
+        """Tests a missing or empty subject_id is rejected"""
+        response = client.get("/histology", params=params)
+        assert 422 == response.status_code
 
 
 if __name__ == "__main__":
