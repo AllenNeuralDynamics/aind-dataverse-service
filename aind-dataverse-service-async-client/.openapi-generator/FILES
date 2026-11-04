@@ -16,6 +16,9 @@ aind_dataverse_service_async_client/models/__init__.py
 aind_dataverse_service_async_client/models/entity_table_row.py
 aind_dataverse_service_async_client/models/funding_model.py
 aind_dataverse_service_async_client/models/health_check.py
+aind_dataverse_service_async_client/models/histology_model.py
+aind_dataverse_service_async_client/models/histology_reagent_model.py
+aind_dataverse_service_async_client/models/histology_wash_model.py
 aind_dataverse_service_async_client/models/http_validation_error.py
 aind_dataverse_service_async_client/models/validation_error.py
 aind_dataverse_service_async_client/models/validation_error_loc_inner.py
@@ -28,6 +31,9 @@ docs/FundingModel.md
 docs/HTTPValidationError.md
 docs/HealthCheck.md
 docs/HealthcheckApi.md
+docs/HistologyModel.md
+docs/HistologyReagentModel.md
+docs/HistologyWashModel.md
 docs/ValidationError.md
 docs/ValidationErrorLocInner.md
 docs/WaterRestrictionModel.md
@@ -43,6 +49,9 @@ test/test_entity_table_row.py
 test/test_funding_model.py
 test/test_health_check.py
 test/test_healthcheck_api.py
+test/test_histology_model.py
+test/test_histology_reagent_model.py
+test/test_histology_wash_model.py
 test/test_http_validation_error.py
 test/test_validation_error.py
 test/test_validation_error_loc_inner.py
