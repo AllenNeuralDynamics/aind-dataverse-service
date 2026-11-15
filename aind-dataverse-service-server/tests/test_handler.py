@@ -11,6 +11,8 @@ from PowerPlatform.Dataverse.models import Record
 from aind_dataverse_service_server.handler import (
     delipidation_fetchxml,
     group_delipidation_rows,
+    imaging_fetchxml,
+    imaging_rows_to_models,
     water_restriction_sql_query,
 )
 from tests.conftest import RESOURCES_DIR
@@ -208,6 +210,112 @@ class TestHistologyHandler:
         assert ["Off Pipeline Staining"] == list(notes)
         assert notes["Off Pipeline Staining"].startswith(
             "Samples permeabilized"
+        )
+
+
+class TestImagingHandler:
+    """Test the imaging query and conversion."""
+
+    def test_imaging_fetchxml(self):
+        """Tests the query filters on the subject, a start date and the
+        Imaging Complete status, newest first."""
+        root = ElementTree.fromstring(
+            imaging_fetchxml(
+                subject_id="886598", start_date_gte=datetime(2026, 9, 1)
+            )
+        )
+        assert "aibs_wholebrainimaging" == root.find("entity").get("name")
+        assert ("createdon", "true") == (
+            root.find("entity/order").get("attribute"),
+            root.find("entity/order").get("descending"),
+        )
+        assert [
+            ("cr138_aibsmouseregistry", "eq", "886598"),
+            ("createdon", "ge", "2026-09-01T00:00:00+00:00"),
+            ("cr138_taskstatus", "eq", "8"),
+        ] == [
+            (c.get("attribute"), c.get("operator"), c.get("value"))
+            for c in root.findall("entity/filter/condition")
+        ]
+
+    def test_imaging_rows_to_models_886598(self):
+        """Tests the real row of mouse 886598 is converted to labels,
+        directions and channel lists."""
+        with open(RESOURCES_DIR / "imaging_886598.json") as f:
+            records = imaging_rows_to_models(json.load(f))
+        assert [
+            {
+                "experiment_run_created_on": "2026-09-17T21:31:42Z",
+                "order_created_by": "Person 2",
+                "order_project_id": (
+                    "Thalamus - Project 1 Mesoscale thalamic circuits"
+                ),
+                "specimen_id": "886598",
+                "subject_id": "886598",
+                "date_performed": "2026-10-13T00:00:00Z",
+                "chamber_immersion_medium": "Cargille oil",
+                "sample_immersion_medium": "EasyIndex",
+                "chamber_refractive_index": 1.52,
+                "sample_refractive_index": 1.52,
+                "instrument_nickname": "Heffer",
+                "experimenter_name": "Person 1",
+                "z_direction": "Superior_to_inferior",
+                "y_direction": "Anterior_to_posterior",
+                "x_direction": "Left_to_right",
+                "imaging_channels": ["488", "639"],
+                "stitching_channels": "488",
+                "ccf_registration_channels": "639",
+                "cell_segmentation_channels": None,
+            }
+        ] == records
+
+    def test_imaging_rows_to_models_edge_cases(self):
+        """Tests unknown codes keep their code, empty values stay None,
+        sagittal codes map their own axes, and names without a three-letter
+        code give no directions."""
+        sagittal, unknown, unnamed = imaging_rows_to_models(
+            [
+                {
+                    "orientation": "Sagittal_LAS.png",
+                    "stitching_channels": "488,561",
+                    "cell_segmentation_channels": "445",
+                },
+                {
+                    "orientation": "Sagittal_LXS.png",
+                    "chamber_immersion_medium": 99,
+                    "sample_immersion_medium": 99,
+                    "instrument_nickname": 99,
+                },
+                {"orientation": "Horizontal.png"},
+            ]
+        )
+        assert (
+            "Right_to_left",
+            "Posterior_to_anterior",
+            "Inferior_to_superior",
+            "488, 561",
+            ["445"],
+            None,
+            None,
+        ) == (
+            sagittal["z_direction"],
+            sagittal["y_direction"],
+            sagittal["x_direction"],
+            sagittal["stitching_channels"],
+            sagittal["cell_segmentation_channels"],
+            sagittal["imaging_channels"],
+            sagittal["chamber_immersion_medium"],
+        )
+        assert ("99", "99", "99", None) == (
+            unknown["chamber_immersion_medium"],
+            unknown["sample_immersion_medium"],
+            unknown["instrument_nickname"],
+            unknown["y_direction"],
+        )
+        assert (None, None, None) == (
+            unnamed["z_direction"],
+            unnamed["y_direction"],
+            unnamed["x_direction"],
         )
 
 

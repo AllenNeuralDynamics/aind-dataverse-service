@@ -17,6 +17,8 @@ from aind_dataverse_service_server.handler import (
     delipidation_fetchxml,
     funding_sql_query,
     group_delipidation_rows,
+    imaging_fetchxml,
+    imaging_rows_to_models,
     water_restriction_sql_query,
 )
 from aind_dataverse_service_server.models import (
@@ -24,6 +26,7 @@ from aind_dataverse_service_server.models import (
     FundingModel,
     HealthCheck,
     HistologyModel,
+    SmartSpimImagingModel,
     WaterRestrictionModel,
 )
 from aind_dataverse_service_server.session import StaticTokenCredential
@@ -421,3 +424,105 @@ async def get_histology(
     # Grouping runs in a worker thread so large results don't block the
     # event loop.
     return await to_thread(group_delipidation_rows, data)
+
+
+@cache(expire=600)
+async def get_imaging_data(
+    subject_id: str,
+    start_date_gte: Optional[datetime],
+    end_date_lte: Optional[datetime],
+) -> List[dict]:
+    """
+    Fetch whole brain imaging rows from the new Dataverse environment and
+    cache the response.
+
+    Parameters
+    ----------
+    subject_id : str
+      Only return this mouse.
+    start_date_gte : Optional[datetime]
+      Only return records created on or after this time.
+    end_date_lte : Optional[datetime]
+      Only return records created on or before this time.
+
+    Returns
+    -------
+    List[dict]
+      The imaging rows as dictionaries.
+    """
+    access_token = await get_dataverse_access_token(
+        scope_url=settings.new_dataverse_api_scope_url
+    )
+    static_token = StaticTokenCredential(access_token)
+    with DataverseClient(
+        base_url=f"{settings.new_environment_url}", credential=static_token
+    ) as dataverse_client:
+        return await to_thread(
+            _fetch_single_page,
+            dataverse_client,
+            imaging_fetchxml(
+                subject_id=subject_id,
+                start_date_gte=start_date_gte,
+                end_date_lte=end_date_lte,
+            ),
+        )
+
+
+@router.get(
+    "/smartspim_imaging",
+    response_model=List[SmartSpimImagingModel],
+    operation_id="get_smartspim_imaging",
+)
+async def get_smartspim_imaging(
+    request: Request,
+    subject_id: str = Query(
+        ...,
+        min_length=1,
+        description="Subject ID",
+        openapi_examples={
+            "default": Example(
+                summary="A subject with SmartSPIM imaging data",
+                description="Subject ID",
+                value="886598",
+            )
+        },
+    ),
+    start_date_gte: Optional[datetime] = Query(
+        None,
+        description=(
+            "Created on or after. ISO format; times without a timezone are "
+            "UTC."
+        ),
+        openapi_examples={
+            "iso_date": Example(summary="ISO date", value="2026-09-01"),
+            "iso_datetime_z": Example(
+                summary="ISO datetime in UTC", value="2026-09-01T00:00:00Z"
+            ),
+        },
+    ),
+    end_date_lte: Optional[datetime] = Query(
+        None,
+        description=(
+            "Created on or before. ISO format; times without a timezone are "
+            "UTC."
+        ),
+        openapi_examples={
+            "iso_date": Example(summary="ISO date", value="2026-10-01"),
+            "iso_datetime_z": Example(
+                summary="ISO datetime in UTC", value="2026-10-01T00:00:00Z"
+            ),
+        },
+    ),
+):
+    """
+    ## SmartSPIM Imaging
+    Retrieves completed SmartSPIM imaging sessions, newest first.
+    """
+    semaphore = request.app.state.semaphore
+    async with semaphore:
+        data = await get_imaging_data(
+            subject_id=subject_id,
+            start_date_gte=start_date_gte,
+            end_date_lte=end_date_lte,
+        )
+    return imaging_rows_to_models(data)

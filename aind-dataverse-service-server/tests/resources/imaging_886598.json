@@ -1,0 +1,21 @@
+[
+  {
+    "aibs_wholebrainimagingid": "4e030527-dfb2-f111-aaac-6045bd0a386b",
+    "experimenter_name": "Person 1",
+    "order_project_id": "Thalamus - Project 1 Mesoscale thalamic circuits",
+    "sample_immersion_medium": 1,
+    "orientation": "Horizontal_IPR.png",
+    "sample_refractive_index": 1.52,
+    "chamber_refractive_index": 1.52,
+    "date_performed": "2026-10-13T00:00:00Z",
+    "ccf_registration_channels": "639",
+    "specimen_id": "886598",
+    "imaging_channels": "488,639",
+    "subject_id": "886598",
+    "experiment_run_created_on": "2026-09-17T21:31:42Z",
+    "chamber_immersion_medium": 2,
+    "order_created_by": "Person 2",
+    "stitching_channels": "488",
+    "instrument_nickname": 1
+  }
+]

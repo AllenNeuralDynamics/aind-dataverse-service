@@ -1,6 +1,7 @@
 """Module to handle query logic and responses. Note that the Dataverse SQL API
 is read-only and has protections against injection attacks. The histology
-queries are expressed as FetchXML, the SDK's supported way to express JOINs.
+and imaging queries are expressed as FetchXML, the SDK's supported way to
+express JOINs.
 """
 
 from datetime import datetime, timezone
@@ -117,7 +118,7 @@ def _to_utc_iso(d: datetime) -> str:
     return d.astimezone(timezone.utc).isoformat()
 
 
-def _histology_filters(
+def _fetchxml_filters(
     subject_attribute: str,
     date_attribute: str,
     subject_id: str,
@@ -125,7 +126,7 @@ def _histology_filters(
     end_date_lte: datetime | None,
 ) -> tuple[str, str]:
     """
-    Build the subject filter and the optional date filter for the histology
+    Build the subject filter and the optional date filter for the FetchXML
     queries.
 
     Parameters
@@ -191,7 +192,7 @@ def delipidation_fetchxml(
     str
         The FetchXML query string.
     """
-    subject_filter, date_filter = _histology_filters(
+    subject_filter, date_filter = _fetchxml_filters(
         "cr138_aibsmouseregistry",
         "createdon",
         subject_id,
@@ -435,4 +436,255 @@ def group_delipidation_rows(
                         ],
                     }
                 )
+    return records
+
+
+# ``aibs_wholebrainimaging.cr138_taskstatus`` code for a finished imaging
+# session. Records with other statuses haven't been imaged yet.
+IMAGING_STATUS_COMPLETE = 8
+
+# Labels of the ``aibs_wholebrainimaging`` choice columns. FetchXML returns
+# only the numeric code, so unknown codes are returned as the code itself.
+CHAMBER_IMMERSION_MEDIUM_LABELS = {
+    2: "Cargille oil",
+    3: "diH2O",
+    4: "Ethyl cinnamate",
+    5: "Optiplex and DMSO",
+}
+SAMPLE_IMMERSION_MEDIUM_LABELS = {1: "EasyIndex", 2: "Ethyl cinnamate"}
+INSTRUMENT_NICKNAME_LABELS = {
+    1: "Heffer",
+    2: "Rocko",
+    3: "Spunky",
+    4: "Rocko or Spunky",
+}
+
+# The orientation image is named like ``Horizontal_IPR.png``. Its letters give
+# the z, y and x axes in that order, each naming the side the axis points to.
+AXIS_DIRECTIONS = {
+    "L": "Right_to_left",
+    "R": "Left_to_right",
+    "A": "Posterior_to_anterior",
+    "P": "Anterior_to_posterior",
+    "S": "Inferior_to_superior",
+    "I": "Superior_to_inferior",
+}
+
+
+def imaging_fetchxml(
+    subject_id: str,
+    start_date_gte: datetime | None = None,
+    end_date_lte: datetime | None = None,
+) -> str:
+    """
+    Generate FetchXML that gathers the completed SmartSPIM imaging sessions
+    of a mouse.
+
+    Returns one row per whole brain imaging record, newest first. The date
+    range is applied to its ``createdon``.
+
+    Parameters
+    ----------
+    subject_id : str
+        Only return this mouse.
+    start_date_gte : datetime | None
+        Only return records created on or after this time.
+    end_date_lte : datetime | None
+        Only return records created on or before this time.
+
+    Returns
+    -------
+    str
+        The FetchXML query string.
+    """
+    subject_filter, date_filter = _fetchxml_filters(
+        "cr138_aibsmouseregistry",
+        "createdon",
+        subject_id,
+        start_date_gte,
+        end_date_lte,
+    )
+    return f"""
+<fetch>
+  <entity name="aibs_wholebrainimaging">
+    <order attribute="createdon" descending="true" />
+    <attribute name="createdon" alias="experiment_run_created_on" />
+    <attribute name="cr138_aibsmouseregistry" alias="subject_id" />
+    <attribute name="aibs_brainid" alias="specimen_id" />
+    <attribute name="aibs_performeddate" alias="date_performed" />
+    <attribute name="aibs_chamberimmersionmedium"
+               alias="chamber_immersion_medium" />
+    <attribute name="aibs_sampleimmersionmedium"
+               alias="sample_immersion_medium" />
+    <attribute name="cr138_chamberrefractiveindex"
+               alias="chamber_refractive_index" />
+    <attribute name="cr138_samplerefractiveindex"
+               alias="sample_refractive_index" />
+    <attribute name="cr138_instrumentname" alias="instrument_nickname" />
+    <attribute name="aibs_imagingfluorescencechannels"
+               alias="imaging_channels" />
+    <attribute name="aibs_stitchingfluorescencechannels"
+               alias="stitching_channels" />
+    <attribute name="aibs_ccffluorescencechannels"
+               alias="ccf_registration_channels" />
+    <attribute name="aibs_celldetectionfluorescencechannels"
+               alias="cell_segmentation_channels" />
+    {subject_filter}
+    {date_filter}
+    <filter>
+      <condition attribute="cr138_taskstatus" operator="eq"
+                 value="{IMAGING_STATUS_COMPLETE}" />
+    </filter>
+    <link-entity name="systemuser"
+                 from="systemuserid" to="aibs_operator"
+                 link-type="outer" alias="u">
+      <attribute name="fullname" alias="experimenter_name" />
+    </link-entity>
+    <link-entity name="cr138_imagelibrary"
+                 from="cr138_imagelibraryid"
+                 to="cr138_detailimagingorientation"
+                 link-type="outer" alias="o">
+      <attribute name="cr138_imagename" alias="orientation" />
+    </link-entity>
+    <link-entity name="aibs_procedurerequest1"
+                 from="aibs_procedurerequest1id" to="aibs_procedurerequestid"
+                 link-type="outer" alias="pr">
+      <link-entity name="systemuser"
+                   from="systemuserid" to="createdby"
+                   link-type="outer" alias="pu">
+        <attribute name="fullname" alias="order_created_by" />
+      </link-entity>
+      <link-entity name="cr138_aibsprojects"
+                   from="cr138_aibsprojectsid" to="cr138_aibsproject"
+                   link-type="outer" alias="pp">
+        <attribute name="cr138_name" alias="order_project_id" />
+      </link-entity>
+    </link-entity>
+  </entity>
+</fetch>
+"""
+
+
+def _choice_label(labels: dict[int, str], code: object) -> str | None:
+    """
+    Look up the label of a choice column code.
+
+    Parameters
+    ----------
+    labels : dict[int, str]
+        The labels of the choice column, keyed by code.
+    code : object
+        The code, or None.
+
+    Returns
+    -------
+    str | None
+        The label, the code itself when it is unknown, or None.
+    """
+    return None if code is None else labels.get(code, str(code))
+
+
+def _orientation_directions(orientation: object) -> dict[str, str | None]:
+    """
+    Convert an orientation image name into the z, y and x directions.
+
+    Parameters
+    ----------
+    orientation : object
+        The image name, like ``Horizontal_IPR.png``, or None.
+
+    Returns
+    -------
+    dict[str, str | None]
+        The ``z_direction``, ``y_direction`` and ``x_direction``. All are None
+        when the name has no three-letter code; an unknown letter gives None.
+    """
+    code = str(orientation or "").rsplit(".", 1)[0].rsplit("_", 1)[-1]
+    letters = code if len(code) == 3 else ""
+    return {
+        axis: AXIS_DIRECTIONS.get(letter)
+        for axis, letter in zip(
+            ("z_direction", "y_direction", "x_direction"),
+            letters or (None, None, None),
+        )
+    }
+
+
+def _channels(value: object) -> list[str] | None:
+    """
+    Split a multi-select channel column into its channels. The codes of
+    these columns are the wavelengths, which are also their labels.
+
+    Parameters
+    ----------
+    value : object
+        The comma-separated codes, like ``"488,639"``, or None.
+
+    Returns
+    -------
+    list[str] | None
+        The channels, or None when none are selected.
+    """
+    return None if value is None else str(value).split(",")
+
+
+def imaging_rows_to_models(
+    rows: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """
+    Convert the rows returned by ``imaging_fetchxml`` into records.
+
+    Parameters
+    ----------
+    rows : list[dict[str, object]]
+        The rows returned by ``imaging_fetchxml``.
+
+    Returns
+    -------
+    list[dict[str, object]]
+        Records shaped like ``SmartSpimImagingModel``, in the same order.
+    """
+    records = []
+    for row in rows:
+        stitching = _channels(row.get("stitching_channels"))
+        ccf = _channels(row.get("ccf_registration_channels"))
+        records.append(
+            {
+                "experiment_run_created_on": row.get(
+                    "experiment_run_created_on"
+                ),
+                "order_created_by": row.get("order_created_by"),
+                "order_project_id": row.get("order_project_id"),
+                "specimen_id": row.get("specimen_id"),
+                "subject_id": row.get("subject_id"),
+                "date_performed": row.get("date_performed"),
+                "chamber_immersion_medium": _choice_label(
+                    CHAMBER_IMMERSION_MEDIUM_LABELS,
+                    row.get("chamber_immersion_medium"),
+                ),
+                "sample_immersion_medium": _choice_label(
+                    SAMPLE_IMMERSION_MEDIUM_LABELS,
+                    row.get("sample_immersion_medium"),
+                ),
+                "chamber_refractive_index": row.get(
+                    "chamber_refractive_index"
+                ),
+                "sample_refractive_index": row.get("sample_refractive_index"),
+                "instrument_nickname": _choice_label(
+                    INSTRUMENT_NICKNAME_LABELS, row.get("instrument_nickname")
+                ),
+                "experimenter_name": row.get("experimenter_name"),
+                **_orientation_directions(row.get("orientation")),
+                "imaging_channels": _channels(row.get("imaging_channels")),
+                "stitching_channels": (
+                    None if stitching is None else ", ".join(stitching)
+                ),
+                "ccf_registration_channels": (
+                    None if ccf is None else ", ".join(ccf)
+                ),
+                "cell_segmentation_channels": _channels(
+                    row.get("cell_segmentation_channels")
+                ),
+            }
+        )
     return records

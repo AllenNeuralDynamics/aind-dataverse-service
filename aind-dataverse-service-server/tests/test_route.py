@@ -1,5 +1,6 @@
 """Test routes"""
 
+import json
 from datetime import datetime
 from typing import List
 from unittest.mock import MagicMock, call, patch
@@ -17,8 +18,10 @@ from aind_dataverse_service_server.route import (
     get_dataverse_access_token,
     get_funding_data,
     get_histology_data,
+    get_imaging_data,
     get_water_restriction_data,
 )
+from tests.conftest import RESOURCES_DIR
 
 
 class TestRoute:
@@ -489,6 +492,91 @@ class TestRoute:
     ):
         """Tests a missing or empty subject_id is rejected"""
         response = client.get("/histology", params=params)
+        assert 422 == response.status_code
+
+    @patch("aind_dataverse_service_server.route.ClientSecretCredential")
+    @patch("aind_dataverse_service_server.route.DataverseClient")
+    async def test_get_imaging_data(
+        self,
+        mock_dataverse_client: MagicMock,
+        mock_azure_credentials: MagicMock,
+    ):
+        """Tests get_imaging_data runs the imaging query against the new
+        environment"""
+        mock_azure_credentials.return_value.get_token.return_value = (
+            AccessToken(token="abc", expires_on=100)
+        )
+        mock_instance = (
+            mock_dataverse_client.return_value.__enter__.return_value
+        )
+        record = Record(id="", table="", data={"subject_id": "886598"})
+        mock_pages = mock_instance.query.fetchxml.return_value.execute_pages
+        mock_pages.return_value = [[record]]
+        response = await get_imaging_data(
+            subject_id="886598", start_date_gte=None, end_date_lte=None
+        )
+        assert [{"subject_id": "886598"}] == response
+        assert "aibs_wholebrainimaging" in (
+            mock_instance.query.fetchxml.call_args.args[0]
+        )
+        assert (
+            "http://new.example.com"
+            == mock_dataverse_client.call_args.kwargs["base_url"]
+        )
+
+    @patch("aind_dataverse_service_server.route.get_imaging_data")
+    async def test_get_smartspim_imaging_200(
+        self, mock_get_imaging_data: MagicMock, client: TestClient
+    ):
+        """Tests a good response when fetching SmartSPIM imaging info"""
+        with open(RESOURCES_DIR / "imaging_886598.json") as f:
+            mock_get_imaging_data.return_value = json.load(f)
+        response = client.get(
+            "/smartspim_imaging",
+            params={"subject_id": "886598", "end_date_lte": "2026-10-01"},
+        )
+        assert 200 == response.status_code
+        assert [
+            {
+                "experiment_run_created_on": "2026-09-17T21:31:42Z",
+                "order_created_by": "Person 2",
+                "order_project_id": (
+                    "Thalamus - Project 1 Mesoscale thalamic circuits"
+                ),
+                "specimen_id": "886598",
+                "subject_id": "886598",
+                "protocol_name": None,
+                "protocol_id": None,
+                "date_performed": "2026-10-13T00:00:00Z",
+                "chamber_immersion_medium": "Cargille oil",
+                "sample_immersion_medium": "EasyIndex",
+                "chamber_refractive_index": "1.52",
+                "sample_refractive_index": "1.52",
+                "instrument_id": None,
+                "instrument_nickname": "Heffer",
+                "experimenter_name": "Person 1",
+                "z_direction": "Superior_to_inferior",
+                "y_direction": "Anterior_to_posterior",
+                "x_direction": "Left_to_right",
+                "imaging_channels": ["488", "639"],
+                "stitching_channels": "488",
+                "ccf_registration_channels": "639",
+                "cell_segmentation_channels": None,
+            }
+        ] == response.json()
+        kwargs = mock_get_imaging_data.call_args.kwargs
+        assert ("886598", None, datetime(2026, 10, 1)) == (
+            kwargs["subject_id"],
+            kwargs["start_date_gte"],
+            kwargs["end_date_lte"],
+        )
+
+    @pytest.mark.parametrize("params", [{}, {"subject_id": ""}])
+    def test_get_smartspim_imaging_missing_subject_422(
+        self, client: TestClient, params: dict
+    ):
+        """Tests a missing or empty subject_id is rejected"""
+        response = client.get("/smartspim_imaging", params=params)
         assert 422 == response.status_code
 
 
