@@ -375,14 +375,14 @@ class TestRoute:
         assert expected_response == response.json()
 
     def test_fetch_single_page_rejects_multiple_pages(
-        self, mock_labeling_records: List[Record]
+        self, mock_delipidation_records: List[Record]
     ):
         """Tests a result that needs a second page is refused, not returned
         incomplete."""
         mock_client = MagicMock()
         mock_client.query.fetchxml.return_value.execute_pages.return_value = [
-            mock_labeling_records[:1],
-            mock_labeling_records[1:],
+            mock_delipidation_records[:1],
+            mock_delipidation_records[1:],
         ]
         with pytest.raises(MultiPageResultError):
             _fetch_single_page(mock_client, "<fetch />")
@@ -400,10 +400,9 @@ class TestRoute:
         mock_dataverse_client: MagicMock,
         mock_azure_credentials: MagicMock,
         mock_delipidation_records: List[Record],
-        mock_labeling_records: List[Record],
     ):
-        """Tests get_histology_data runs both queries against the new
-        environment"""
+        """Tests get_histology_data runs the delipidation query against the
+        new environment"""
         mock_azure_credentials.return_value.get_token.return_value = (
             AccessToken(token="abc", expires_on=100)
         )
@@ -411,18 +410,12 @@ class TestRoute:
             mock_dataverse_client.return_value.__enter__.return_value
         )
         mock_pages = mock_instance.query.fetchxml.return_value.execute_pages
-        mock_pages.side_effect = [
-            [mock_delipidation_records],
-            [mock_labeling_records],
-        ]
+        mock_pages.return_value = [mock_delipidation_records]
         response = await get_histology_data(
             subject_id="782745", start_date_gte=None, end_date_lte=None
         )
-        assert {
-            "delipidation": [r.data for r in mock_delipidation_records],
-            "labeling": [r.data for r in mock_labeling_records],
-        } == response
-        assert 2 == mock_instance.query.fetchxml.call_count
+        assert [r.data for r in mock_delipidation_records] == response
+        assert 1 == mock_instance.query.fetchxml.call_count
         assert (
             "http://new.example.com"
             == mock_dataverse_client.call_args.kwargs["base_url"]
@@ -437,13 +430,11 @@ class TestRoute:
         mock_get_histology_data: MagicMock,
         client: TestClient,
         mock_delipidation_records: List[Record],
-        mock_labeling_records: List[Record],
     ):
         """Tests a good response when fetching histology info"""
-        mock_get_histology_data.return_value = {
-            "delipidation": [r.data for r in mock_delipidation_records],
-            "labeling": [r.data for r in mock_labeling_records],
-        }
+        mock_get_histology_data.return_value = [
+            r.data for r in mock_delipidation_records
+        ]
         response = client.get(
             "/histology",
             params={"subject_id": "782745", "start_date_gte": "2026-09-01"},
@@ -451,32 +442,36 @@ class TestRoute:
         assert 200 == response.status_code
         body = response.json()
         assert [
-            "SmartSPIM Labeling",
             "SmartSPIM Delipidation",
             "SmartSPIM Refractive Index Matching",
             "SmartSPIM Delipidation",
         ] == [r["procedure_name"] for r in body]
         assert {
-            "procedure_name": "SmartSPIM Labeling",
-            "experiment_run_created_on": "2026-09-16T21:16:37Z",
+            "procedure_name": "SmartSPIM Delipidation",
+            "experiment_run_created_on": "2026-09-16T21:20:51Z",
             "specimen_id": "782745",
             "subject_id": "782745",
             "protocol_id": None,
             "protocol_name": None,
             "washes": [
                 {
-                    "wash_name": "Labeling",
-                    "wash_type": None,
-                    "start_time": "2026-09-17T16:00:00Z",
-                    "end_time": "2026-09-18T16:00:00Z",
+                    "wash_name": "Active Delipidation",
+                    "wash_type": "Active Delipidation",
+                    "start_time": "2026-09-16T22:23:00Z",
+                    "end_time": "2026-09-16T22:24:00Z",
                     "modified_by": "Person One",
+                    "notes": "Extended by one day",
                     "reagents": [
                         {
-                            "name": "anti-GFP",
+                            "name": "Conduction Buffer",
                             "source": None,
-                            "lot_number": None,
+                            "lot_number": "K08S108",
                         },
-                        {"name": "DAPI", "source": None, "lot_number": None},
+                        {
+                            "name": "Delipidation Buffer",
+                            "source": None,
+                            "lot_number": "DBBP0825",
+                        },
                     ],
                 }
             ],

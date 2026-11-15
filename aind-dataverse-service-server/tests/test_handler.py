@@ -1,5 +1,6 @@
 """Tests handler module"""
 
+import json
 import unittest
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -10,10 +11,10 @@ from PowerPlatform.Dataverse.models import Record
 from aind_dataverse_service_server.handler import (
     delipidation_fetchxml,
     group_delipidation_rows,
-    labeling_fetchxml,
-    labeling_rows_to_histology,
     water_restriction_sql_query,
 )
+
+from .conftest import RESOURCES_DIR
 
 
 class TestHandler(unittest.TestCase):
@@ -32,9 +33,17 @@ class TestHistologyHandler:
         """Tests the query is well-formed and has no date filter by default."""
         root = ElementTree.fromstring(delipidation_fetchxml("782745"))
         assert (
-            root.find("entity/link-entity[@name='aibs_wholebrainimaging']")
-            is not None
+            root.find(".//link-entity[@name='aibs_wholebrainimaging']") is None
         )
+        assert [
+            ("cr138_removedon", "null", None),
+            ("cr138_membershipstatus", "ne", "2"),
+        ] == [
+            (c.get("attribute"), c.get("operator"), c.get("value"))
+            for c in root.findall(
+                "entity/link-entity[@alias='m']/filter/condition"
+            )
+        ]
         assert "aibs_reagentwashid" == root.find("entity/order").get(
             "attribute"
         )
@@ -66,23 +75,6 @@ class TestHistologyHandler:
             ("le", "2026-10-01T07:00:00+00:00"),
         ] == [(c.get("operator"), c.get("value")) for c in date_conditions]
 
-    def test_labeling_fetchxml(self):
-        """Tests the labeling query filters on the subject and an end date."""
-        root = ElementTree.fromstring(
-            labeling_fetchxml(
-                subject_id="782745", end_date_lte=datetime(2026, 10, 1)
-            )
-        )
-        assert (
-            root.find("entity/link-entity[@name='aibs_wholebrainimaging']")
-            is not None
-        )
-        conditions = root.findall("entity/filter/condition")
-        assert [
-            ("cr138_aibsmouseregistry", "782745"),
-            ("createdon", "2026-10-01T00:00:00+00:00"),
-        ] == [(c.get("attribute"), c.get("value")) for c in conditions]
-
     def test_group_delipidation_rows(
         self, mock_delipidation_records: List[Record]
     ):
@@ -97,6 +89,7 @@ class TestHistologyHandler:
             "start_time": "2026-09-16T22:23:00Z",
             "end_time": "2026-09-16T22:24:00Z",
             "modified_by": "Person One",
+            "notes": "Extended by one day",
             "reagents": [
                 {
                     "name": "Conduction Buffer",
@@ -131,6 +124,7 @@ class TestHistologyHandler:
                         "start_time": "2026-09-16T22:23:00Z",
                         "end_time": "2026-09-16T22:23:30Z",
                         "modified_by": "Person One",
+                        "notes": None,
                         "reagents": [
                             {
                                 "name": "EasyIndex",
@@ -145,6 +139,7 @@ class TestHistologyHandler:
                         "start_time": None,
                         "end_time": None,
                         "modified_by": "Person One",
+                        "notes": None,
                         "reagents": [],
                     },
                 ],
@@ -159,8 +154,9 @@ class TestHistologyHandler:
         ] == records
 
     def test_group_delipidation_rows_edge_cases(self):
-        """Tests batches without steps are dropped and unknown wash types
-        keep their code."""
+        """Tests batches without steps are dropped, unknown wash types keep
+        their code, and the membership's specimen ID wins over the subject
+        ID."""
         base = {
             "reagent_wash_id": "w",
             "subject_id": "1",
@@ -172,10 +168,15 @@ class TestHistologyHandler:
         records = group_delipidation_rows(
             [
                 {**base, "step_id": "s1", "wash_type": 99},
-                {**base, "step_id": "s2", "batch_id": "b2"},
+                {
+                    **base,
+                    "step_id": "s2",
+                    "batch_id": "b2",
+                    "specimen_id": "1-a",
+                },
             ]
         )
-        assert [("99", None, None), (None, None, None)] == [
+        assert [("99", None, "1"), (None, None, "1-a")] == [
             (
                 r["washes"][0]["wash_type"],
                 r["washes"][0]["wash_name"],
@@ -184,28 +185,30 @@ class TestHistologyHandler:
             for r in records
         ]
 
-    def test_labeling_rows_to_histology(
-        self, mock_labeling_records: List[Record]
-    ):
-        """Tests each labeling row becomes one record with one wash."""
+    def test_group_delipidation_rows_886598(self):
+        """Tests the real rows of mouse 886598 give one experiment run: its
+        removed batch membership is excluded by the query, so only batch 235b
+        is left, with the off-pipeline staining notes on its wash."""
+        with open(RESOURCES_DIR / "histology_886598.json") as f:
+            records = group_delipidation_rows(json.load(f))
         assert [
-            {
-                "procedure_name": "SmartSPIM Labeling",
-                "experiment_run_created_on": "2026-09-16T21:16:37Z",
-                "subject_id": "782745",
-                "specimen_id": "782745",
-                "washes": [
-                    {
-                        "wash_name": "Labeling",
-                        "start_time": "2026-09-17T16:00:00Z",
-                        "end_time": "2026-09-18T16:00:00Z",
-                        "modified_by": "Person One",
-                        "reagents": [{"name": "anti-GFP"}, {"name": "DAPI"}],
-                    }
-                ],
-            }
-        ] == labeling_rows_to_histology(
-            [r.data for r in mock_labeling_records]
+            ("SmartSPIM Delipidation", "2026-10-08T17:59:55Z"),
+            ("SmartSPIM Refractive Index Matching", "2026-10-08T17:59:55Z"),
+        ] == [
+            (r["procedure_name"], r["experiment_run_created_on"])
+            for r in records
+        ]
+        assert {("886598", "886598")} == {
+            (r["specimen_id"], r["subject_id"]) for r in records
+        }
+        notes = {
+            w["wash_name"]: w["notes"]
+            for w in records[0]["washes"]
+            if w["notes"] is not None
+        }
+        assert ["Off Pipeline Staining"] == list(notes)
+        assert notes["Off Pipeline Staining"].startswith(
+            "Samples permeabilized"
         )
 
 

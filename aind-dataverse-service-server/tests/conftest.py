@@ -151,7 +151,7 @@ def mock_water_restriction_records() -> List[Record]:
 
 
 def _delipidation_row(**data: object) -> Record:
-    """Build a delipidation row for batch Batch-01 and specimen 782745."""
+    """Build a delipidation row for batch Batch-01 and subject 782745."""
     return Record(
         id="",
         table="",
@@ -171,8 +171,7 @@ def mock_delipidation_records() -> List[Record]:
     """Mock the flat rows returned by the delipidation FetchXML.
 
     Two lots on Active Delipidation, one on RI Wash #1, and an Embedding step
-    that only specimen 782745 takes part in. Specimen 782745 has imaging
-    records in this batch and another one; 614177 only in another one.
+    that only specimen 782745 takes part in. Active Delipidation has notes.
     """
     step = {"modified_by": "Person One"}
     active = {
@@ -184,6 +183,7 @@ def mock_delipidation_records() -> List[Record]:
         "wash_type": 4,
         "start_time": "2026-09-16T22:23:00Z",
         "end_time": "2026-09-16T22:24:00Z",
+        "notes": "Extended by one day",
     }
     ri_wash = {
         **step,
@@ -228,61 +228,13 @@ def mock_delipidation_records() -> List[Record]:
         "reagent_wash_id": "wash-614177",
         "subject_id": "614177",
     }
-    other_batch_imaging = {
-        "specimen_id": "782745-other",
-        "imaging_batch_id": "batch-0",
-    }
-    imaging = {"specimen_id": "782745", "imaging_batch_id": "batch-1"}
     return [
-        _delipidation_row(**ri_wash, **other_batch_imaging),
-        _delipidation_row(**active, **secondary_lot, **imaging),
+        _delipidation_row(**ri_wash),
+        _delipidation_row(**active, **secondary_lot),
         _delipidation_row(**active, **primary_lot),
         _delipidation_row(**embedding),
-        _delipidation_row(
-            **other_specimen,
-            **active,
-            **primary_lot,
-            specimen_id="614177",
-            imaging_batch_id="batch-0",
-        ),
+        _delipidation_row(**other_specimen, **active, **primary_lot),
         _delipidation_row(**other_specimen, **embedding),
-    ]
-
-
-@pytest.fixture
-def mock_labeling_records() -> List[Record]:
-    """Mock the rows returned by the labeling FetchXML: one labeling record
-    joined to two imaging records."""
-    labeling = {
-        "labeling_id": "labeling-1",
-        "batch_id": "batch-1",
-        "subject_id": "782745",
-        "created_on": "2026-09-16T21:16:37Z",
-        "start_time": "2026-09-17T16:00:00Z",
-        "end_time": "2026-09-18T16:00:00Z",
-        "modified_by": "Person One",
-        "primary_antibody": "anti-GFP",
-        "dye": "DAPI",
-    }
-    return [
-        Record(
-            id="",
-            table="",
-            data={
-                **labeling,
-                "specimen_id": "782745-other",
-                "imaging_batch_id": "batch-0",
-            },
-        ),
-        Record(
-            id="",
-            table="",
-            data={
-                **labeling,
-                "specimen_id": "782745",
-                "imaging_batch_id": "batch-1",
-            },
-        ),
     ]
 
 

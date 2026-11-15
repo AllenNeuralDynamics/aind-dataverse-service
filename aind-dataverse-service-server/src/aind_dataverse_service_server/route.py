@@ -1,6 +1,6 @@
 """Module to handle endpoint responses"""
 
-from asyncio import gather, to_thread
+from asyncio import to_thread
 from datetime import datetime
 from typing import List, Optional
 
@@ -17,8 +17,6 @@ from aind_dataverse_service_server.handler import (
     delipidation_fetchxml,
     funding_sql_query,
     group_delipidation_rows,
-    labeling_fetchxml,
-    labeling_rows_to_histology,
     water_restriction_sql_query,
 )
 from aind_dataverse_service_server.models import (
@@ -325,10 +323,10 @@ async def get_histology_data(
     subject_id: str,
     start_date_gte: Optional[datetime],
     end_date_lte: Optional[datetime],
-) -> dict:
+) -> List[dict]:
     """
-    Fetch delipidation and labeling rows from the new Dataverse environment
-    and cache the response.
+    Fetch delipidation rows from the new Dataverse environment and cache the
+    response.
 
     Parameters
     ----------
@@ -341,34 +339,25 @@ async def get_histology_data(
 
     Returns
     -------
-    dict
-      The ``delipidation`` and ``labeling`` rows as dictionaries.
+    List[dict]
+      The delipidation rows as dictionaries.
     """
     access_token = await get_dataverse_access_token(
         scope_url=settings.new_dataverse_api_scope_url
     )
     static_token = StaticTokenCredential(access_token)
-    filters = {
-        "subject_id": subject_id,
-        "start_date_gte": start_date_gte,
-        "end_date_lte": end_date_lte,
-    }
     with DataverseClient(
         base_url=f"{settings.new_environment_url}", credential=static_token
     ) as dataverse_client:
-        delipidation, labeling = await gather(
-            to_thread(
-                _fetch_single_page,
-                dataverse_client,
-                delipidation_fetchxml(**filters),
-            ),
-            to_thread(
-                _fetch_single_page,
-                dataverse_client,
-                labeling_fetchxml(**filters),
+        return await to_thread(
+            _fetch_single_page,
+            dataverse_client,
+            delipidation_fetchxml(
+                subject_id=subject_id,
+                start_date_gte=start_date_gte,
+                end_date_lte=end_date_lte,
             ),
         )
-    return {"delipidation": delipidation, "labeling": labeling}
 
 
 @router.get(
@@ -419,8 +408,8 @@ async def get_histology(
 ):
     """
     ## Histology
-    Retrieves SmartSPIM labeling, delipidation and refractive index matching
-    data. Returns one record per specimen and procedure.
+    Retrieves SmartSPIM delipidation and refractive index matching data.
+    Returns one record per specimen, batch and procedure.
     """
     semaphore = request.app.state.semaphore
     async with semaphore:
@@ -431,9 +420,4 @@ async def get_histology(
         )
     # Grouping runs in a worker thread so large results don't block the
     # event loop.
-    return await to_thread(
-        lambda: (
-            labeling_rows_to_histology(data["labeling"])
-            + group_delipidation_rows(data["delipidation"])
-        )
-    )
+    return await to_thread(group_delipidation_rows, data)
