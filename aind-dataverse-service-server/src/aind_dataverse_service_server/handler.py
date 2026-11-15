@@ -452,7 +452,7 @@ CHAMBER_IMMERSION_MEDIUM_LABELS = {
     5: "Optiplex and DMSO",
 }
 SAMPLE_IMMERSION_MEDIUM_LABELS = {1: "EasyIndex", 2: "Ethyl cinnamate"}
-INSTRUMENT_LABELS = {
+INSTRUMENT_NICKNAME_LABELS = {
     1: "Heffer",
     2: "Rocko",
     3: "Spunky",
@@ -520,7 +520,7 @@ def imaging_fetchxml(
                alias="chamber_refractive_index" />
     <attribute name="cr138_samplerefractiveindex"
                alias="sample_refractive_index" />
-    <attribute name="cr138_instrumentname" alias="instrument_id" />
+    <attribute name="cr138_instrumentname" alias="instrument_nickname" />
     <attribute name="aibs_imagingfluorescencechannels"
                alias="imaging_channels" />
     <attribute name="aibs_stitchingfluorescencechannels"
@@ -670,8 +670,8 @@ def imaging_rows_to_models(
                     "chamber_refractive_index"
                 ),
                 "sample_refractive_index": row.get("sample_refractive_index"),
-                "instrument_id": _choice_label(
-                    INSTRUMENT_LABELS, row.get("instrument_id")
+                "instrument_nickname": _choice_label(
+                    INSTRUMENT_NICKNAME_LABELS, row.get("instrument_nickname")
                 ),
                 "experimenter_name": row.get("experimenter_name"),
                 **_orientation_directions(row.get("orientation")),

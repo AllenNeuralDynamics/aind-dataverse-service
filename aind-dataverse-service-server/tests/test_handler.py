@@ -257,7 +257,7 @@ class TestImagingHandler:
                 "sample_immersion_medium": "EasyIndex",
                 "chamber_refractive_index": 1.52,
                 "sample_refractive_index": 1.52,
-                "instrument_id": "Heffer",
+                "instrument_nickname": "Heffer",
                 "experimenter_name": "Person 1",
                 "z_direction": "Superior_to_inferior",
                 "y_direction": "Anterior_to_posterior",
@@ -284,7 +284,7 @@ class TestImagingHandler:
                     "orientation": "Sagittal_LXS.png",
                     "chamber_immersion_medium": 99,
                     "sample_immersion_medium": 99,
-                    "instrument_id": 99,
+                    "instrument_nickname": 99,
                 },
                 {"orientation": "Horizontal.png"},
             ]
@@ -309,7 +309,7 @@ class TestImagingHandler:
         assert ("99", "99", "99", None) == (
             unknown["chamber_immersion_medium"],
             unknown["sample_immersion_medium"],
-            unknown["instrument_id"],
+            unknown["instrument_nickname"],
             unknown["y_direction"],
         )
         assert (None, None, None) == (

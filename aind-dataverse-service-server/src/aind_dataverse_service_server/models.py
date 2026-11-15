@@ -143,6 +143,9 @@ class SmartSpimImagingModel(BaseModel):
         default=None, title="Sample Refractive Index"
     )
     instrument_id: str | None = Field(default=None, title="Instrument ID")
+    instrument_nickname: str | None = Field(
+        default=None, title="Instrument Nickname"
+    )
     experimenter_name: str | None = Field(
         default=None, title="Experimenter Name"
     )
