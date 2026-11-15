@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**get_funding**](DefaultApi.md#get_funding) | **GET** /funding | Get Funding
 [**get_histology**](DefaultApi.md#get_histology) | **GET** /histology | Get Histology
+[**get_smartspim_imaging**](DefaultApi.md#get_smartspim_imaging) | **GET** /smartspim_imaging | Get Smartspim Imaging
 [**get_table**](DefaultApi.md#get_table) | **GET** /tables/{entity_set_table_name} | Get Table
 [**get_table_info**](DefaultApi.md#get_table_info) | **GET** /tables | Get Table Info
 [**get_water_restriction**](DefaultApi.md#get_water_restriction) | **GET** /water_restriction | Get Water Restriction
@@ -132,6 +133,80 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**List[HistologyModel]**](HistologyModel.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful Response |  -  |
+**422** | Validation Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_smartspim_imaging**
+> List[SmartSpimImagingModel] get_smartspim_imaging(subject_id, start_date_gte=start_date_gte, end_date_lte=end_date_lte)
+
+Get Smartspim Imaging
+
+## SmartSPIM Imaging
+Retrieves completed SmartSPIM imaging sessions, newest first.
+
+### Example
+
+
+```python
+import aind_dataverse_service_async_client
+from aind_dataverse_service_async_client.models.smart_spim_imaging_model import SmartSpimImagingModel
+from aind_dataverse_service_async_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to http://localhost
+# See configuration.py for a list of all supported configuration parameters.
+configuration = aind_dataverse_service_async_client.Configuration(
+    host = "http://localhost"
+)
+
+
+# Enter a context with an instance of the API client
+async with aind_dataverse_service_async_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = aind_dataverse_service_async_client.DefaultApi(api_client)
+    subject_id = '886598' # str | Subject ID
+    start_date_gte = '2026-09-01' # datetime | Created on or after. ISO format; times without a timezone are UTC. (optional)
+    end_date_lte = '2026-10-01' # datetime | Created on or before. ISO format; times without a timezone are UTC. (optional)
+
+    try:
+        # Get Smartspim Imaging
+        api_response = await api_instance.get_smartspim_imaging(subject_id, start_date_gte=start_date_gte, end_date_lte=end_date_lte)
+        print("The response of DefaultApi->get_smartspim_imaging:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling DefaultApi->get_smartspim_imaging: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **subject_id** | **str**| Subject ID | 
+ **start_date_gte** | **datetime**| Created on or after. ISO format; times without a timezone are UTC. | [optional] 
+ **end_date_lte** | **datetime**| Created on or before. ISO format; times without a timezone are UTC. | [optional] 
+
+### Return type
+
+[**List[SmartSpimImagingModel]**](SmartSpimImagingModel.md)
 
 ### Authorization
 

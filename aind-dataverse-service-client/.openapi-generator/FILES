@@ -20,6 +20,7 @@ aind_dataverse_service_client/models/histology_model.py
 aind_dataverse_service_client/models/histology_reagent_model.py
 aind_dataverse_service_client/models/histology_wash_model.py
 aind_dataverse_service_client/models/http_validation_error.py
+aind_dataverse_service_client/models/smart_spim_imaging_model.py
 aind_dataverse_service_client/models/validation_error.py
 aind_dataverse_service_client/models/validation_error_loc_inner.py
 aind_dataverse_service_client/models/water_restriction_model.py
@@ -34,6 +35,7 @@ docs/HealthcheckApi.md
 docs/HistologyModel.md
 docs/HistologyReagentModel.md
 docs/HistologyWashModel.md
+docs/SmartSpimImagingModel.md
 docs/ValidationError.md
 docs/ValidationErrorLocInner.md
 docs/WaterRestrictionModel.md
@@ -53,6 +55,7 @@ test/test_histology_model.py
 test/test_histology_reagent_model.py
 test/test_histology_wash_model.py
 test/test_http_validation_error.py
+test/test_smart_spim_imaging_model.py
 test/test_validation_error.py
 test/test_validation_error_loc_inner.py
 test/test_water_restriction_model.py
