@@ -13,8 +13,7 @@ from aind_dataverse_service_server.handler import (
     group_delipidation_rows,
     water_restriction_sql_query,
 )
-
-from .conftest import RESOURCES_DIR
+from tests.conftest import RESOURCES_DIR
 
 
 class TestHandler(unittest.TestCase):
