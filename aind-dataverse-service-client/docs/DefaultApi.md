@@ -82,8 +82,8 @@ No authorization required
 Get Histology
 
 ## Histology
-Retrieves SmartSPIM labeling, delipidation and refractive index matching
-data. Returns one record per specimen and procedure.
+Retrieves SmartSPIM delipidation and refractive index matching data.
+Returns one record per specimen, batch and procedure.
 
 ### Example
 

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **start_time** | **datetime** |  | [optional] 
 **end_time** | **datetime** |  | [optional] 
 **modified_by** | **str** |  | [optional] 
+**notes** | **str** |  | [optional] 
 **reagents** | [**List[HistologyReagentModel]**](HistologyReagentModel.md) |  | [optional] 
 
 ## Example
