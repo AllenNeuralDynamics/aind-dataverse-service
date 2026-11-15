@@ -89,6 +89,7 @@ class HistologyWashModel(BaseModel):
     start_time: AwareDatetime | None = Field(default=None, title="Start Time")
     end_time: AwareDatetime | None = Field(default=None, title="End Time")
     modified_by: str | None = Field(default=None, title="Modified By")
+    notes: str | None = Field(default=None, title="Notes")
     reagents: List[HistologyReagentModel] = Field(
         default_factory=list, title="Reagents"
     )

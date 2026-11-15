@@ -75,7 +75,10 @@ def water_restriction_sql_query(mouse_id: str) -> str:
 
 DELIPIDATION_PROCEDURE = "SmartSPIM Delipidation"
 RI_MATCHING_PROCEDURE = "SmartSPIM Refractive Index Matching"
-LABELING_PROCEDURE = "SmartSPIM Labeling"
+
+# ``cr138_delipidationbatchmembership.cr138_membershipstatus`` code for a
+# specimen that was removed from the batch.
+MEMBERSHIP_STATUS_REMOVED = 2
 
 # Batch steps whose ``cr138_stepkey`` starts with one of these belong to
 # refractive index matching. Every other step belongs to delipidation.
@@ -93,44 +96,6 @@ WASH_TYPE_LABELS = {
     6: "Refractive Index Wash #2",
     7: "Embedding",
 }
-
-
-# Joins the whole brain imaging records of the same procedure request, whose
-# brain ID is the specimen ID. A procedure request can have more than one, so
-# rows can repeat per record.
-_WHOLE_BRAIN_IMAGING_LINK = """
-    <link-entity name="aibs_wholebrainimaging"
-                 from="aibs_procedurerequestid"
-                 to="aibs_procedurerequestid"
-                 link-type="outer" alias="w">
-      <attribute name="aibs_brainid" alias="specimen_id" />
-      <attribute name="cr138_batchid" alias="imaging_batch_id" />
-    </link-entity>"""
-
-
-def _pick_specimen_id(
-    rows: list[dict[str, object]], batch_id: object
-) -> object:
-    """
-    Pick the brain ID from the joined whole brain imaging records.
-
-    Parameters
-    ----------
-    rows : list[dict[str, object]]
-        Rows of one record, each with the ``specimen_id`` and
-        ``imaging_batch_id`` of an imaging record.
-    batch_id : object
-        The batch of the record. An imaging record in this batch is preferred.
-
-    Returns
-    -------
-    object
-        The brain ID of an imaging record in the same batch, otherwise the
-        first one found, or None when there is none.
-    """
-    found = [r for r in rows if r.get("specimen_id") is not None]
-    same_batch = [r for r in found if r.get("imaging_batch_id") == batch_id]
-    return next((r["specimen_id"] for r in same_batch + found), None)
 
 
 def _to_utc_iso(d: datetime) -> str:
@@ -208,9 +173,9 @@ def delipidation_fetchxml(
     """
     Generate FetchXML that gathers the batch steps each specimen went through.
 
-    Returns one row per specimen, imaging record, batch step, step reagent lot
-    and step participant. Removed batch memberships are excluded. The date
-    range is applied to the batch's ``createdon``.
+    Returns one row per specimen, batch step, step reagent lot and step
+    participant. Removed batch memberships are excluded. The date range is
+    applied to the batch's ``createdon``.
 
     Parameters
     ----------
@@ -239,12 +204,15 @@ def delipidation_fetchxml(
     <order attribute="aibs_reagentwashid" />
     <attribute name="aibs_reagentwashid" alias="reagent_wash_id" />
     <attribute name="cr138_aibsmouseregistry" alias="subject_id" />
-    {subject_filter}{_WHOLE_BRAIN_IMAGING_LINK}
+    {subject_filter}
     <link-entity name="cr138_delipidationbatchmembership"
                  from="cr138_reagentwash" to="aibs_reagentwashid"
                  link-type="inner" alias="m">
+      <attribute name="cr138_aibsmouseregistry" alias="specimen_id" />
       <filter>
         <condition attribute="cr138_removedon" operator="null" />
+        <condition attribute="cr138_membershipstatus" operator="ne"
+                   value="{MEMBERSHIP_STATUS_REMOVED}" />
       </filter>
       <link-entity name="cr138_batch"
                    from="cr138_batchid" to="cr138_batch"
@@ -264,6 +232,7 @@ def delipidation_fetchxml(
           <attribute name="cr138_washtype" alias="wash_type" />
           <attribute name="cr138_startdate" alias="start_time" />
           <attribute name="cr138_enddate" alias="end_time" />
+          <attribute name="cr138_notes" alias="notes" />
           <link-entity name="systemuser"
                        from="systemuserid" to="cr138_completedby"
                        link-type="outer" alias="u">
@@ -299,75 +268,6 @@ def delipidation_fetchxml(
           </link-entity>
         </link-entity>
       </link-entity>
-    </link-entity>
-  </entity>
-</fetch>
-"""
-
-
-def labeling_fetchxml(
-    subject_id: str,
-    start_date_gte: datetime | None = None,
-    end_date_lte: datetime | None = None,
-) -> str:
-    """
-    Generate FetchXML that gathers specimen labeling records.
-
-    Returns one row per labeling record and imaging record. The date range is
-    applied to its ``createdon``.
-
-    Parameters
-    ----------
-    subject_id : str
-        Only return this mouse.
-    start_date_gte : datetime | None
-        Only return records created on or after this time.
-    end_date_lte : datetime | None
-        Only return records created on or before this time.
-
-    Returns
-    -------
-    str
-        The FetchXML query string.
-    """
-    subject_filter, date_filter = _histology_filters(
-        "cr138_aibsmouseregistry",
-        "createdon",
-        subject_id,
-        start_date_gte,
-        end_date_lte,
-    )
-    return f"""
-<fetch>
-  <entity name="aibs_specimenlabeling">
-    <order attribute="aibs_specimenlabelingid" />
-    <attribute name="aibs_specimenlabelingid" alias="labeling_id" />
-    <attribute name="cr138_batchid" alias="batch_id" />
-    <attribute name="cr138_aibsmouseregistry" alias="subject_id" />
-    <attribute name="createdon" alias="created_on" />
-    <attribute name="aibs_startdate" alias="start_time" />
-    <attribute name="aibs_enddate" alias="end_time" />
-    {subject_filter}
-    {date_filter}{_WHOLE_BRAIN_IMAGING_LINK}
-    <link-entity name="cr138_aibsantibody"
-                 from="cr138_aibsantibodyid" to="cr138_aibsfirstantibody"
-                 link-type="outer" alias="a1">
-      <attribute name="cr138_name" alias="primary_antibody" />
-    </link-entity>
-    <link-entity name="cr138_aibsantibody"
-                 from="cr138_aibsantibodyid" to="cr138_aibssecondantibody"
-                 link-type="outer" alias="a2">
-      <attribute name="cr138_name" alias="secondary_antibody" />
-    </link-entity>
-    <link-entity name="cr138_aibsdye"
-                 from="cr138_aibsdyeid" to="cr138_aibsdye"
-                 link-type="outer" alias="d">
-      <attribute name="cr138_name" alias="dye" />
-    </link-entity>
-    <link-entity name="systemuser"
-                 from="systemuserid" to="modifiedby"
-                 link-type="outer" alias="u">
-      <attribute name="fullname" alias="modified_by" />
     </link-entity>
   </entity>
 </fetch>
@@ -421,6 +321,7 @@ def _step_to_wash(
         "start_time": row.get("start_time"),
         "end_time": row.get("end_time"),
         "modified_by": row.get("modified_by"),
+        "notes": row.get("notes"),
         "reagents": [
             {
                 "name": lot.get("reagent_name"),
@@ -448,18 +349,17 @@ def _index_delipidation_rows(
     -------
     tuple[dict[tuple, dict[str, object]], dict[object, dict[str, object]]]
         The runs, keyed by reagent wash and batch, each with its first
-        ``row``, its ``step_ids`` in first-seen order and its
-        ``imaging_rows``; and the steps, keyed by step ID, each with its first
-        ``row``, its reagent ``lots`` and its ``participants``.
+        ``row`` and its ``step_ids`` in first-seen order; and the steps,
+        keyed by step ID, each with its first ``row``, its reagent ``lots``
+        and its ``participants``.
     """
     runs: dict[tuple, dict[str, object]] = {}
     steps: dict[object, dict[str, object]] = {}
     for row in rows:
         run = runs.setdefault(
             (row["reagent_wash_id"], row["batch_id"]),
-            {"row": row, "step_ids": [], "imaging_rows": []},
+            {"row": row, "step_ids": []},
         )
-        run["imaging_rows"].append(row)
         step_id = row.get("step_id")
         if step_id is None:
             continue
@@ -484,7 +384,8 @@ def group_delipidation_rows(
 
     Steps are split into delipidation and refractive index matching by their
     step key. A step with participants only applies to those specimens; a step
-    without them applies to every specimen in the batch.
+    without them applies to every specimen in the batch. The specimen ID is
+    the batch membership's mouse ID, falling back to the subject ID.
 
     Parameters
     ----------
@@ -524,9 +425,8 @@ def group_delipidation_rows(
                             "batch_created_on"
                         ],
                         "subject_id": run["row"].get("subject_id"),
-                        "specimen_id": _pick_specimen_id(
-                            run["imaging_rows"], run["row"]["batch_id"]
-                        ),
+                        "specimen_id": run["row"].get("specimen_id")
+                        or run["row"].get("subject_id"),
                         "washes": [
                             w
                             for _, w in sorted(
@@ -536,56 +436,3 @@ def group_delipidation_rows(
                     }
                 )
     return records
-
-
-def labeling_rows_to_histology(
-    rows: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    """
-    Collapse specimen labeling rows into one histology record per labeling
-    record.
-
-    Each labeling record has a single start and end time, so it becomes one
-    wash whose reagents are its primary antibody, secondary antibody and dye,
-    when set.
-
-    Parameters
-    ----------
-    rows : list[dict[str, object]]
-        The rows returned by ``labeling_fetchxml``.
-
-    Returns
-    -------
-    list[dict[str, object]]
-        Records shaped like ``HistologyModel``.
-    """
-    grouped: dict[object, list[dict[str, object]]] = {}
-    for row in rows:
-        grouped.setdefault(row["labeling_id"], []).append(row)
-    return [
-        {
-            "procedure_name": LABELING_PROCEDURE,
-            "experiment_run_created_on": row.get("created_on"),
-            "subject_id": row.get("subject_id"),
-            "specimen_id": _pick_specimen_id(group, row.get("batch_id")),
-            "washes": [
-                {
-                    "wash_name": "Labeling",
-                    "start_time": row.get("start_time"),
-                    "end_time": row.get("end_time"),
-                    "modified_by": row.get("modified_by"),
-                    "reagents": [
-                        {"name": row[field]}
-                        for field in (
-                            "primary_antibody",
-                            "secondary_antibody",
-                            "dye",
-                        )
-                        if row.get(field) is not None
-                    ],
-                }
-            ],
-        }
-        for group in grouped.values()
-        for row in group[:1]
-    ]
