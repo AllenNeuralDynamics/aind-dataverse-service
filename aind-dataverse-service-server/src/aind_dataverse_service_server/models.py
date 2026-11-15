@@ -109,3 +109,55 @@ class HistologyModel(BaseModel):
     washes: List[HistologyWashModel] = Field(
         default_factory=list, title="Washes"
     )
+
+
+class SmartSpimImagingModel(BaseModel):
+    """Response model for the SmartSPIM Imaging API"""
+
+    experiment_run_created_on: AwareDatetime | None = Field(
+        default=None, title="Experiment Run Created On"
+    )
+    order_created_by: str | None = Field(
+        default=None, title="Order Created By"
+    )
+    order_project_id: str | None = Field(
+        default=None, title="Order Project ID"
+    )
+    specimen_id: str | None = Field(default=None, title="Specimen ID")
+    subject_id: str | None = Field(default=None, title="Subject ID")
+    protocol_name: str | None = Field(default=None, title="Protocol Name")
+    protocol_id: str | None = Field(default=None, title="Protocol ID")
+    date_performed: AwareDatetime | None = Field(
+        default=None, title="Date Performed"
+    )
+    chamber_immersion_medium: str | None = Field(
+        default=None, title="Chamber Immersion Medium"
+    )
+    sample_immersion_medium: str | None = Field(
+        default=None, title="Sample Immersion Medium"
+    )
+    chamber_refractive_index: Decimal | None = Field(
+        default=None, title="Chamber Refractive Index"
+    )
+    sample_refractive_index: Decimal | None = Field(
+        default=None, title="Sample Refractive Index"
+    )
+    instrument_id: str | None = Field(default=None, title="Instrument ID")
+    experimenter_name: str | None = Field(
+        default=None, title="Experimenter Name"
+    )
+    z_direction: str | None = Field(default=None, title="Z Direction")
+    y_direction: str | None = Field(default=None, title="Y Direction")
+    x_direction: str | None = Field(default=None, title="X Direction")
+    imaging_channels: List[str] | None = Field(
+        default=None, title="Imaging Channels"
+    )
+    stitching_channels: str | None = Field(
+        default=None, title="Stitching Channels"
+    )
+    ccf_registration_channels: str | None = Field(
+        default=None, title="CCF Registration Channels"
+    )
+    cell_segmentation_channels: List[str] | None = Field(
+        default=None, title="Cell Segmentation Channels"
+    )
