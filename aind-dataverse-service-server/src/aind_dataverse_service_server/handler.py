@@ -550,7 +550,7 @@ def imaging_fetchxml(
                  from="aibs_procedurerequest1id" to="aibs_procedurerequestid"
                  link-type="outer" alias="pr">
       <link-entity name="systemuser"
-                   from="systemuserid" to="createdby"
+                   from="systemuserid" to="aibs_requestor"
                    link-type="outer" alias="pu">
         <attribute name="fullname" alias="order_created_by" />
       </link-entity>
