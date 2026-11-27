@@ -238,6 +238,17 @@ class TestImagingHandler:
             for c in root.findall("entity/filter/condition")
         ]
 
+    def test_imaging_fetchxml_order_created_by_is_requestor(self):
+        """Tests order_created_by comes from the procedure request's
+        Requestor, not the user who created the record."""
+        root = ElementTree.fromstring(imaging_fetchxml(subject_id="818585"))
+        user = root.find(
+            "entity/link-entity[@name='aibs_procedurerequest1']"
+            "/link-entity[@name='systemuser']"
+        )
+        assert "aibs_requestor" == user.get("to")
+        assert "order_created_by" == user.find("attribute").get("alias")
+
     def test_imaging_rows_to_models_886598(self):
         """Tests the real row of mouse 886598 is converted to labels,
         directions and channel lists."""
